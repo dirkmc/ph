@@ -17,12 +17,8 @@ object Application extends Controller {
 object Parser extends Controller {
     def parse = {
         val msgs:List[CompilationError] = CompilerDaemon.update
-        if(msgs.size() > 0) {
-            val msg = msgs(0)
-            Json("""[{"row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}]""")
-        } else {
-            Json("[]")
-        }
+        val json = msgs.map(msg => {"""{"row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""}).mkString("[", ",", "]")
+        Json(json)
     }
     /*
     import sjson.json._
@@ -41,9 +37,8 @@ object CompilerDaemon {
     )
     
     def update:List[CompilationError] = {
-        compiler.update(List(new File(Application.fileName))) match {
-            //case Right(compiled) => updateInternalApplicationClasses(compiled)
-            case Left(err) => List(err)
+        compiler.updates(List(new File(Application.fileName))) match {
+            case Left(errList) => errList
             case _ => List()
         }
     }
