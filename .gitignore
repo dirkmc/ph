@@ -1,0 +1,14 @@
+.classpath
+.project
+.scala_dependencies
+.settings/
+ph/.classpath
+ph/.project
+ph/.scala_dependencies
+ph/bin/
+ph/eclipse/
+ph/public/.DS_Store
+#ph/public/javascripts/ace/
+ph/test-result/
+ph/tmp/
+
