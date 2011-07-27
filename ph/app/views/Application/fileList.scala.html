@@ -1,0 +1,15 @@
+@(file:java.io.File)
+
+@if(file.isDirectory) {
+  <div class="directory">
+    <span class="title">@file.getName</span>
+    <ul>
+      @List(file.listFiles : _*).map{ f => <li>@fileList(f)</li> }
+    </ul>
+  </div>
+} else {
+  <div class="file">
+    <span class="title">@file.getName</span>
+    <input type="hidden" value="@file.getAbsolutePath" />
+  </div>
+}

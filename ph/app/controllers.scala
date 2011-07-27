@@ -11,12 +11,27 @@ object Application extends Controller {
     
     val fileName = "/Users/dirk/dev/projects/yabe/app/models.scala"
     
-    def index = html.index(scala.io.Source.fromFile(fileName))
+    def index = {
+        val root = new File("/Users/dirk/dev/projects/yabe")
+        html.index(root, scala.io.Source.fromFile(fileName))
+    }
 }
 
-object Parser extends Controller {
-    def parse = {
-        val msgs:List[CompilationError] = CompilerDaemon.update
+object FileManager extends Controller {
+    def load(fileName:String) = scala.io.Source.fromFile(fileName).mkString
+    
+    def save(fileName:String, content:String):Unit = {
+        if(fileName == null || fileName.length() == 0 || content == null || content.length() == 0) {
+            println("file name or content null or empty")
+            return
+        }
+        
+        println("Writing " + fileName + " with " + content.length() + " chars");
+        play.libs.IO.writeContent(content, new File(fileName));
+    }
+    
+    def compile(fileName:String) = {
+        val msgs:List[CompilationError] = CompilerDaemon.update(List(new File(fileName)))
         val json = msgs.map(msg => {"""{"row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""}).mkString("[", ",", "]")
         Json(json)
     }
@@ -36,8 +51,8 @@ object CompilerDaemon {
         Play.tmpDir
     )
     
-    def update:List[CompilationError] = {
-        compiler.updates(List(new File(Application.fileName))) match {
+    def update(files:List[File]): List[CompilationError] = {
+        compiler.updates(files) match {
             case Left(errList) => errList
             case _ => List()
         }

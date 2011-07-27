@@ -5,7 +5,9 @@
 # Home page
 GET     /                                       Application.index
 
-GET     /parse.json                             Parser.parse
+GET     /file/compile.json                      FileManager.compile
+GET     /file/load                              FileManager.load
+POST    /file/save                              FileManager.save
 
 
 # Ignore favicon requests

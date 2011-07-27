@@ -1,26 +1,21 @@
 @(
-    f:scala.io.Source 
+    root:java.io.File,
+    source:scala.io.Source
 )
 
+@import views.Application.html.fileList
 
-<style type="text/css" media="screen">
-    body {
-        overflow: hidden;
-    }
+
+<link href="/public/stylesheets/editor.less" rel="stylesheet" type="text/css" charset="utf-8"></link>
     
-    #editor { 
-        margin: 0;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-    }
-</style>
+<div id="files-window">
+  @fileList(root)
+</div>
 
-<pre id="editor">@f.mkString</pre>
+<pre id="editor">@source.mkString</pre>
 
-    
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript" language="javascript" charset="utf-8"></script>
 <script src="https://raw.github.com/douglascrockford/JSON-js/master/json2.js" type="text/javascript" charset="utf-8"></script>
 <script data-main="/public/javascripts/editor.js" src="/public/javascripts/ace/demo/require.js" type="text/javascript" charset="utf-8"></script>
 
