@@ -1,6 +1,5 @@
 @(
-    root:java.io.File,
-    source:scala.io.Source
+    root:java.io.File
 )
 
 @import views.Application.html.fileList
@@ -12,7 +11,7 @@
   @fileList(root)
 </div>
 
-<pre id="editor">@source.mkString</pre>
+<div id="editor"></div>
 
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript" language="javascript" charset="utf-8"></script>

@@ -12,11 +12,7 @@ $(function() {
             url: '/file/load',
             data: { fileName: fileName },
             success: function(content) {
-                var paneId = fileName + '-pane';
-                var editorPane = $('<pre class="editor-pane" id="' + paneId + '">' + content + '</pre>');
-                $('#editor').empty().append(editorPane);
-                createEditor(fileName, paneId);
-                document.title = fileName;
+                openEditor(fileName, content);
             }
         })
     });
@@ -31,36 +27,58 @@ $(function() {
     };
     
     
-    var currentEditor = null;
-    function createEditor(fileName, editorId) {
-        currentEditor = this;
-        this.fileName = fileName;
-        this.editorId = editorId;
-        this.editor = null;
-
-        require({
-            baseUrl: baseUrl,
-            paths: paths
-        },
-        ['ace/ace', 'ace/mode/scala'],
-        function(ace, scala) {
-            this.editor = ace.edit(editorId);
-            editor.setTheme("ace/theme/eclipse");
-            var ScalaMode = scala.Mode;
-            editor.getSession().setMode(new ScalaMode(fileName));
-        });
+    var editors = {};
+    function openEditor(fileName, content) {
+        var editor = editors[fileName];
+        if(editor == null) {
+            var editorPane = $('<pre class="editor-pane">' + content + '</pre>');
+            $('#editor').append(editorPane);
+            editor = new Editor(fileName, editorPane);
+            editors[fileName] = editor;
+        }
         
+        $('#editor').children().hide();
+        editor.editorPane.show();
+        document.title = fileName;
+    }
+    
+    
+    var currentEditor = null;
+    function Editor(fileName, editorPane) {
+        currentEditor = this;
+        var that = this;
+        
+        this.fileName = fileName;
+        this.editorPane = editorPane;
+        this.editor = null;
+        this.isScala = fileName.match(/.scala(.html)?$/) != null;
+
+        this.requireInit = function(ace, scala) {
+            that.editor = ace.edit(editorPane[0]);
+            that.editor.setTheme("ace/theme/eclipse");
+            if(that.isScala) {
+                var ScalaMode = scala.Mode;
+                that.editor.getSession().setMode(new ScalaMode(fileName));
+            }
+        };
+        require({
+                baseUrl: baseUrl,
+                paths: paths
+            },
+            ['ace/ace', 'ace/mode/scala'],
+            that.requireInit
+        );
         
         this.saveFile = function() {
             $.ajax({
                 url: '/file/save',
                 type: 'POST',
                 data: {
-                    fileName: this.fileName,
-                    content: this.editor.getSession().getDocument().getValue()
+                    fileName: that.fileName,
+                    content: that.editor.getSession().getDocument().getValue()
                 }
             });
-        }
+        };
     }
     
     
