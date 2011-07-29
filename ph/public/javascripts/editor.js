@@ -31,25 +31,48 @@ $(function() {
     function openEditor(fileName, content) {
         var editor = editors[fileName];
         if(editor == null) {
+            var editorContainer = $('#editor-container');
+            var tabsContainer = $('#tab-container');
+            
             var editorPane = $('<pre class="editor-pane">' + content + '</pre>');
-            $('#editor').append(editorPane);
-            editor = new Editor(fileName, editorPane);
+            editorContainer.append(editorPane);
+            
+            var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
+            var editorTab = $('<span class="editor-tab">' + shortName + '</span>');
+            tabsContainer.append(editorTab);
+            editorTab.click(function() {
+                showEditor($(this).data('editor'));
+            });
+            
+            editor = new Editor(fileName, editorPane, editorTab);
+            editorTab.data('editor', editor);
             editors[fileName] = editor;
         }
         
-        $('#editor').children().hide();
+        showEditor(editor);
+    }
+    
+    function showEditor(editor) {
+        var tabsContainer = $('#tab-container');
+        tabsContainer.children().removeClass('selected');
+        editor.editorTab.addClass('selected');
+        
+        var editorContainer = $('#editor-container');
+        editorContainer.children().hide();
         editor.editorPane.show();
-        document.title = fileName;
+        
+        document.title = editor.fileName;
     }
     
     
     var currentEditor = null;
-    function Editor(fileName, editorPane) {
+    function Editor(fileName, editorPane, editorTab) {
         currentEditor = this;
         var that = this;
         
         this.fileName = fileName;
         this.editorPane = editorPane;
+        this.editorTab = editorTab;
         this.editor = null;
         this.isScala = fileName.match(/.scala(.html)?$/) != null;
 
