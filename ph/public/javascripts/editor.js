@@ -6,7 +6,7 @@ $(function() {
         });
     });
     
-    $('.file').dblclick(function() {
+    $('.file').click(function() {
         var fileName = $(this).find('input').val();
         $.ajax({
             url: '/file/load',

@@ -12,6 +12,7 @@ object Application extends Controller {
     val root = "/Users/dirk/dev/projects/yabe"
     
     def index = {
+        CompilerDaemon.init()
         val appRoot = new File(root)
         html.index(appRoot)
     }
@@ -45,13 +46,45 @@ object FileManager extends Controller {
 
 object CompilerDaemon {
     import play.templates._
+    
+    val cacheDir = ".phcache"
+    val phCache = new File(Application.root, cacheDir)
+        
+    def init() {
+        if(phCache.exists) phCache.delete
+        phCache.mkdirs
+        
+        val root = new File(Application.root)
+        copy(root, phCache)
+    }
+    
+    def copy(fromDir:File, toDir:File) {
+        import play.libs.IO
+        import java.io.{FileInputStream, FileOutputStream}
+        
+        fromDir.listFiles.map(fromFile =>
+            if(!fromFile.getName.equals(cacheDir)) {
+                if(fromFile.isDirectory) {
+                    println(fromFile)
+                    val newDir = new File(toDir, fromFile.getName)
+                    newDir.mkdirs
+                    copy(fromFile, newDir)
+                } else {
+                    println(fromFile)
+                    val os = new FileOutputStream(new File(toDir, fromFile.getName))
+                    IO.copy(new FileInputStream(fromFile), os)
+                    os.flush
+                    os.close
+                }
+            }
+        )
+    }
 
     val compiler = new PlayScalaCompiler(
-        //Play.applicationPath,
-        new File(Application.root),
+        phCache,
         new File(Play.modules("scala").getRealFile, "lib"), 
         System.getProperty("java.class.path").split(System.getProperty("path.separator")).map(new File(_)).toList, 
-        new File(Application.root + "/tmp")
+        new File(cacheDir + "/tmp")
     )
     
     var currentSources = List[File]()
@@ -81,10 +114,10 @@ object CompilerDaemon {
     
     
     def compile(): List[CompilationError] = {
-        val appRoot = new File(Application.root + "/app")
-        val generatedSource = new File(appRoot, "/tmp/generated");
+        val srcRoot = new File(phCache, "app")
+        val generatedSource = new File(phCache, "/tmp/generated");
         generatedSource.mkdirs
-        val sourcePaths = List(appRoot, generatedSource)
+        val sourcePaths = List(srcRoot, generatedSource)
         
         // Sync generated
         generated(generatedSource).foreach(_.sync())
