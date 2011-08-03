@@ -5,9 +5,13 @@
 # Home page
 GET     /                                       Application.index
 
+GET     /test                                   Application.test
+
 GET     /file/compile.json                      FileManager.compile
 GET     /file/load                              FileManager.load
+GET     /file/load.html                         FileManager.loadHtml
 POST    /file/save                              FileManager.save
+POST    /file/deltas                            FileManager.deltas
 
 
 # Ignore favicon requests

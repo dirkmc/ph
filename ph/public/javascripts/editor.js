@@ -75,7 +75,8 @@ $(function() {
         this.editorTab = editorTab;
         this.editor = null;
         this.isScala = fileName.match(/.scala(.html)?$/) != null;
-
+        this.doc = null;
+        
         this.requireInit = function(ace, scala) {
             that.editor = ace.edit(editorPane[0]);
             that.editor.setTheme("ace/theme/eclipse");
@@ -83,6 +84,12 @@ $(function() {
                 var ScalaMode = scala.Mode;
                 that.editor.getSession().setMode(new ScalaMode(fileName));
             }
+            
+            that.doc = that.editor.getSession().getDocument();
+            that.doc.on("change", function(e) {
+                console.log(e.data)
+                addDelta(e.data);
+            });
         };
         require({
                 baseUrl: baseUrl,
@@ -92,6 +99,28 @@ $(function() {
             that.requireInit
         );
         
+        // TODO: Make sure deltas don't get lost if one is added while the ajax call is being made
+        this.deltas = [];
+        this.sendTimeout = null;
+        function addDelta(delta) {
+            clearTimeout(that.sendTimeout);
+            that.sendTimeout = setTimeout(sendDeltas, 1000);
+            that.deltas.push(delta);
+        }
+        
+        function sendDeltas() {
+            $.ajax({
+                url: '/file/deltas',
+                type: 'POST',
+                data: {
+                    fileName: that.fileName,
+                    deltas: serializeDeltas(that.doc.getNewLineCharacter(), that.deltas)
+                }
+            });
+            
+            that.deltas = [];
+        }
+
         this.saveFile = function() {
             $.ajax({
                 url: '/file/save',
@@ -128,3 +157,125 @@ $(function() {
     
     initAce();
 });
+
+
+function serializeDeltas(newLineChar, origDeltas) {
+    var deltas = linesToChars(newLineChar, origDeltas);
+    
+    var str = '';
+    for(var i = 0; i < deltas.length; i++) {
+        var delta = deltas[i];
+        
+        if(i > 0) {
+            str += "\n";
+        }
+        
+        if(delta.action == "insert") {
+            str += "+";
+            str += delta.start.column + "," + delta.start.row;
+            str += "," + delta.text.replace("\n", "\\n");
+        } else {
+            str += "-";
+            str += delta.start.column + "," + delta.start.row;
+            str += "," + delta.length;
+        }
+    }
+    
+    return str;
+}
+
+function linesToChars(newLineChar, origDeltas) {
+    var deltas = [];
+    for(var i = 0; i < origDeltas.length; i++) {
+        var origDelta = origDeltas[i];
+        
+        var delta = null;
+        switch(origDelta.action) {
+        case "insertLines":
+            delta = {
+                action: "insert",
+                start: { row: origDelta.range.start.row, column: origDelta.range.start.column },
+                text: origDelta.lines.join(newLineChar)
+            }
+        break;
+            
+        case "insertText":
+            delta = {
+                action: "insert",
+                start: { row: origDelta.range.start.row, column: origDelta.range.start.column },
+                text: origDelta.text
+            }
+        break;
+        
+        case "removeLines":
+            delta = {
+                action: "remove",
+                start: { row: origDelta.range.start.row, column: origDelta.range.start.column },
+                length: origDelta.lines.join(newLineChar).length
+            }
+        break;
+        
+        case "removeText":
+            delta = {
+                action: "remove",
+                start: { row: origDelta.range.start.row, column: origDelta.range.start.column },
+                length: origDelta.text.length
+            }
+        break;
+        }
+        
+        deltas.push(delta);
+    }
+    
+    return deltas;
+}
+
+
+/*
+//01234567890123456789012345678901234
+var text = "This is the first sentence\n";
+text    += "Now we're on the next line.\n";
+text    += "Let's add a third, and finally\n";
+text    += "\n";
+text    += "a blank followed by a fifth line\n";
+
+var normalized = serializeDeltas("\n", [{
+        action: "removeText",
+        range: {
+            start: {row: 0, column: 7},
+            end: {row: 0, column: 8}
+        },
+        text: " "
+    }, {
+        action: "removeText",
+        range: {
+            start: {row: 0, column: 6},
+            end: {row: 0, column: 7}
+        },
+        text: "s"
+    }, {
+        action: "removeLines",
+        range: {
+            start: {row: 1, column: 0},
+            end: {row: 3, column: 0}
+        },
+        lines: ["Now we're on the next line.", "Let's add a third, and finally"]
+    }, {
+        action: "insertText",
+        range: {
+            start: {row: 2, column: 8},
+            end: {row: 2, column: 14}
+        },
+        text: "white "
+    }, {
+        action: "insertLines",
+        range: {
+            start: {row: 1, column: 0},
+            end: {row: 3, column: 0}
+        },
+        lines: ["first inserted", "second inserted"]
+    }
+]);
+
+console.log(normalized);
+*/
