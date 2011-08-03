@@ -34,7 +34,6 @@ object Delta {
                 val col = colI.toInt
                 val row = rowI.toInt
                 val length = lengthI.toInt
-                println(col + "," + row + "," + length)
                 
                 var replaceLines = List[String]()
                 var remaining = length;

@@ -114,7 +114,8 @@ $(function() {
                 type: 'POST',
                 data: {
                     fileName: that.fileName,
-                    deltas: serializeDeltas(that.doc.getNewLineCharacter(), that.deltas)
+                    deltas: serializeDeltas(that.doc.getNewLineCharacter(), that.deltas),
+                    compileAfter: true
                 }
             });
             
@@ -122,12 +123,21 @@ $(function() {
         }
 
         this.saveFile = function() {
+            var start = new Date().getTime();
+            var value = that.editor.getSession().getDocument().getValue();
+            
+            // Simple checksum (Couldn't get JS CRC32 to work)
+            var checksum = value.length;
+            for(var c = 0; c < value.length; c++) {
+                checksum = (checksum + value.charAt(c).charCodeAt()) % 2147483647;
+            }
+            
             $.ajax({
                 url: '/file/save',
                 type: 'POST',
                 data: {
                     fileName: that.fileName,
-                    content: that.editor.getSession().getDocument().getValue()
+                    checksum: checksum
                 }
             });
         };

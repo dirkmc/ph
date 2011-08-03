@@ -40,18 +40,19 @@ object FileManager extends Controller {
     def load(fileName:String) = IO.readContentAsString(CompilerDaemon.getFile(fileName))
     def loadHtml(fileName:String) = Html("<pre>" + IO.readContentAsString(CompilerDaemon.getFile(fileName)) + "</pre>")
     
-    def deltas(fileName:String, deltas:String) = {
+    def deltas(fileName:String, deltas:String, compileAfter:Boolean = false) = {
         files.Delta.applyDeltas(CompilerDaemon.getFile(fileName), deltas)
-        "OK"
+        if(!compileAfter) Json("OK") else compile(fileName) 
     }
     
-    def save(fileName:String, content:String):Unit = {
-        if(fileName == null || fileName.length() == 0 || content == null || content.length() == 0) {
-            println("file name or content null or empty")
-            return
+    def save(fileName:String, checksum:Int):Unit = {
+        val orig = CompilerDaemon.getFile(fileName)
+        val origChecksum = files.FIO.checksum(orig)
+        if(checksum != origChecksum) {
+            throw new UnexpectedException("Checksum doesn't match: " + origChecksum + " / " + checksum)
         }
         
-        IO.writeContent(content, new File(fileName));
+        files.FIO.copy(orig, new File(fileName))
     }
     
     def compile(fileName:String) = {

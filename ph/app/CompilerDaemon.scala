@@ -34,10 +34,7 @@ object CompilerDaemon {
                     newDir.mkdirs
                     copy(fromFile, newDir)
                 } else {
-                    val os = new FileOutputStream(new File(toDir, fromFile.getName))
-                    IO.copy(new FileInputStream(fromFile), os)
-                    os.flush
-                    os.close
+                    files.FIO.copy(fromFile, new File(toDir, fromFile.getName))
                 }
             }
         )
