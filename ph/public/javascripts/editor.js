@@ -87,9 +87,10 @@ $(function() {
             
             that.doc = that.editor.getSession().getDocument();
             that.doc.on("change", function(e) {
-                console.log(e.data)
                 addDelta(e.data);
             });
+            
+            compile();
         };
         require({
                 baseUrl: baseUrl,
@@ -110,16 +111,48 @@ $(function() {
         
         function sendDeltas() {
             $.ajax({
-                url: '/file/deltas',
+                url: '/file/deltas.json',
                 type: 'POST',
+                dataType: 'json',
                 data: {
                     fileName: that.fileName,
                     deltas: serializeDeltas(that.doc.getNewLineCharacter(), that.deltas),
                     compileAfter: true
+                },
+                success: function(data) {
+                    setCompileErrors(data)
                 }
             });
             
             that.deltas = [];
+        }
+        
+        function compile() {
+            $.ajax({
+                url: '/file/compile.json',
+                type: 'GET',
+                dataType: 'json',
+                data: {
+                    fileName: that.fileName
+                },
+                success: function(data) {
+                    setCompileErrors(data)
+                }
+            });
+        }
+        
+        function setCompileErrors(messages) {
+            var msgs = [];
+            for(var i = 0; i < messages.length; i++) {
+                msgs.push({
+                    row: messages[i].row - 1,
+                    column: messages[i].column,
+                    text: messages[i].text,
+                    type: (messages[i].type == "Error" ? "error" : messages[i].type)
+                });
+            }
+            
+            that.editor.getSession().setAnnotations(msgs);
         }
 
         this.saveFile = function() {

@@ -56,8 +56,9 @@ object FileManager extends Controller {
     }
     
     def compile(fileName:String) = {
+        val cachedFile = CompilerDaemon.getFile(fileName)
         val json = CompilerDaemon.compile().filter(
-                msg => msg.source.get.toString.equals(fileName)).map(
+                msg => msg.source.get.equals(cachedFile)).map(
                 msg => {"""{"source":"""" + msg.source.get + """", "row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""}).mkString("[", ",", "]")
         Json(json)
     }
