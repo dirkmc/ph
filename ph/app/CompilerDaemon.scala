@@ -97,7 +97,7 @@ object CompilerDaemon {
         val newSources = sources(sourcePaths)
         //if(currentSources != newSources) {
         if(1 == 1) {
-            compiler.updates(newSources, 100) match {
+            compiler.updateWithErrors(newSources, 100) match {
                 case Left(errList) => errList
                 case Right(r) => {
                     currentSources = newSources;

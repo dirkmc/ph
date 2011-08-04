@@ -20,10 +20,10 @@ $(function() {
     
     
     // Ace
-    var baseUrl = "/public/javascripts/ace";
+    var baseUrl = "/public/javascripts";
     var paths = {
-            ace: "lib/ace",
-            pilot: "support/pilot/lib/pilot"
+            ace: "ace/lib/ace",
+            pilot: "ace/support/pilot/lib/pilot"
     };
     
     
