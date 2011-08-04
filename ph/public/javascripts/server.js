@@ -15,23 +15,86 @@ define(function(require, exports, module) {
 
 var ServerInterface = function(settings) {
     this.settings = settings;
-    // TODO: Make sure deltas don't get lost if one is added while the ajax call is being made
     this.deltas = [];
-    this.sendTimeout = null;
+    this.deltaTimeout = null;
+    this.deltaDelay = 1000;
+    this.sendQueue = [];
 };
 
 (function(){
     
-    this.addDelta = function(delta) {
-        clearTimeout(this.sendTimeout);
-        var _self = this;
-        this.sendTimeout = setTimeout(function() { _self.sendDeltas.apply(_self); }, 1000);
-        this.deltas.push(delta);
+    this.enqueue = function(item) {
+        this.sendQueue.push(item);
+        this.sendQueueItem();
     };
     
-    this.compile = function() {
+    this.sendQueueItem = function() {
+        if(this.sendQueue.length == 0 || this.sending) {
+            return;
+        }
+        this.sending = true;
+        
         var _self = this;
-        $.ajax({
+        var ajaxCall = this.sendQueue.pop();
+        ajaxCall.oldComplete = ajaxCall.complete;
+        ajaxCall.complete = function() {
+            ajaxCall.oldComplete && ajaxCall.oldComplete(arguments);
+            _self.sending = false;
+            setTimeout(function() { _self.sendQueueItem.apply(_self); }, 0);
+        };
+        $.ajax(ajaxCall);
+    };
+    
+    this.addDelta = function(delta) {
+        clearTimeout(this.deltaTimeout);
+        var _self = this;
+        this.deltaTimeout = setTimeout(function() { _self.sendDeltas.apply(_self); }, _self.deltaDelay);
+        this.enqueueDelta(delta);
+    };
+    
+    this.forceSendDeltas = function() {
+        clearTimeout(this.deltaTimeout);
+        this.sendDeltas();
+    };
+    
+    this.sendDeltas = function() {
+        var deltas = this.popDeltas();
+        if(deltas.length == 0) {
+            return;
+        }
+        
+        var _self = this;
+        this.enqueue({
+            url: '/file/deltas.json',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                fileName: this.settings.fileName,
+                deltas: serializeDeltas(this.settings.newLine, deltas),
+                compileAfter: true
+            },
+            success: function(data) {
+                _self.settings.onCompile(getCompileErrors(data))
+            }
+        });
+    };
+    
+    this.enqueueDelta = function(delta) {
+        this.deltas.push(delta);
+    };
+    this.popDeltas = function(delta) {
+        var deltas = $.extend(true, [], this.deltas);
+        this.deltas = [];
+        return deltas;
+    };
+    
+    
+    this.compile = function() {
+        // Force the deltas to send before doing a compile
+        this.forceSendDeltas();
+        
+        var _self = this;
+        this.enqueue({
             url: '/file/compile.json',
             type: 'GET',
             dataType: 'json',
@@ -45,13 +108,16 @@ var ServerInterface = function(settings) {
     };
     
     this.saveFile = function(value) {
+        // Force the deltas to send before doing a save
+        this.forceSendDeltas();
+        
         // Simple checksum (Couldn't get JS CRC32 to work)
         var checksum = value.length;
         for(var c = 0; c < value.length; c++) {
             checksum = (checksum + value.charAt(c).charCodeAt()) % 2147483647;
         }
         
-        $.ajax({
+        this.enqueue({
             url: '/file/save',
             type: 'POST',
             data: {
@@ -59,25 +125,6 @@ var ServerInterface = function(settings) {
                 checksum: checksum
             }
         });
-    };
-    
-    this.sendDeltas = function() {
-        var _self = this;
-        $.ajax({
-            url: '/file/deltas.json',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                fileName: this.settings.fileName,
-                deltas: serializeDeltas(this.settings.newLine, this.deltas),
-                compileAfter: true
-            },
-            success: function(data) {
-                _self.settings.onCompile(getCompileErrors(data))
-            }
-        });
-        
-        this.deltas = [];
     };
     
     function getCompileErrors(messages) {
