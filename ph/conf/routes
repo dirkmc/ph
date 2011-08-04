@@ -10,7 +10,8 @@ GET     /test                                   Application.test
 GET     /file/compile.json                      FileManager.compile
 GET     /file/load                              FileManager.load
 GET     /file/load.html                         FileManager.loadHtml
-POST    /file/save                              FileManager.save
+POST    /file/save.json                         FileManager.save
+POST    /file/save/content.json                 FileManager.saveContent
 POST    /file/deltas.json                       FileManager.deltas
 
 

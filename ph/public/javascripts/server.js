@@ -35,14 +35,39 @@ var ServerInterface = function(settings) {
         this.sending = true;
         
         var _self = this;
-        var ajaxCall = this.sendQueue.pop();
-        ajaxCall.oldComplete = ajaxCall.complete;
-        ajaxCall.complete = function() {
-            ajaxCall.oldComplete && ajaxCall.oldComplete(arguments);
-            _self.sending = false;
-            setTimeout(function() { _self.sendQueueItem.apply(_self); }, 0);
-        };
-        $.ajax(ajaxCall);
+        var queueItem = this.sendQueue.shift();
+        doSend(queueItem);
+        
+        // Send a queue item
+        function doSend(ajaxCall) {
+            ajaxCall.oldComplete = ajaxCall.complete;
+            ajaxCall.complete = function() {
+                ajaxCall.oldComplete && ajaxCall.oldComplete(arguments);
+                
+                // Ajax calls can be chained together, for example if there is
+                // an error with saving the deltas, another request is made to
+                // POST the entire contents of the file.
+                var chainItem = ajaxCall.chain ? ajaxCall.chain() : null;
+                if(chainItem) {
+                    doSend(chainItem);
+                } else {
+                    _self.sending = false;
+                    
+                    // Once this request is complete, call the function again
+                    // to send the next item in the queue
+                    setTimeout(function() { _self.sendQueueItem.apply(_self); }, 0);
+                }
+            };
+            
+            // We need to supply the original object to the error call as "this"
+            // in order for chaining to work
+            ajaxCall.oldError = ajaxCall.error;
+            ajaxCall.error = function() {
+                ajaxCall.oldError.apply(ajaxCall, arguments)
+            }
+            
+            $.ajax(ajaxCall);
+        }
     };
     
     this.addDelta = function(delta) {
@@ -117,15 +142,50 @@ var ServerInterface = function(settings) {
             checksum = (checksum + value.charAt(c).charCodeAt()) % 2147483647;
         }
         
+        var _self = this;
         this.enqueue({
-            url: '/file/save',
+            chainVal: value,
+            url: '/file/save.json',
             type: 'POST',
             data: {
-                fileName: this.settings.fileName,
+                fileName: _self.settings.fileName,
                 checksum: checksum
+            },
+            // If saving deltas fails (eg because of a bad checksum) try
+            // sending the entire file as a POST
+            error: function(xhr, textStatus, errorThrown) {
+                if(textStatus == 'error') {
+                    var response = $.parseJSON(xhr.responseText);
+                    if(response && response.error == 'checksum') {
+                        this.checksumError = true;
+                    }
+                }
+            },
+            chain: function() {
+                if(!this.checksumError) {
+                    return null;
+                }
+                return _self.getSaveFileContentQueueItem(this.chainVal);
             }
         });
     };
+    
+    this.saveFileContent = function(value) {
+        // Force the deltas to send before doing a save
+        this.forceSendDeltas();
+        this.enqueue(this.getSaveFileContentQueueItem(value));
+    };
+    
+    this.getSaveFileContentQueueItem = function(value) {
+        return {
+            url: '/file/save/content.json',
+            type: 'POST',
+            data: {
+                fileName: this.settings.fileName,
+                content: value
+            }
+        }
+    }
     
     function getCompileErrors(messages) {
         var msgs = [];

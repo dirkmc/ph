@@ -42,17 +42,28 @@ object FileManager extends Controller {
     
     def deltas(fileName:String, deltas:String, compileAfter:Boolean = false) = {
         files.Delta.applyDeltas(CompilerDaemon.getFile(fileName), deltas)
-        if(!compileAfter) Json("OK") else compile(fileName) 
+        if(!compileAfter) jsonOk else compile(fileName) 
     }
     
-    def save(fileName:String, checksum:Int):Unit = {
+    def save(fileName:String, checksum:Int) = {
         val orig = CompilerDaemon.getFile(fileName)
         val origChecksum = files.FIO.checksum(orig)
-        if(checksum != origChecksum) {
-            throw new UnexpectedException("Checksum doesn't match: " + origChecksum + " / " + checksum)
+        if(checksum == origChecksum) {
+            files.FIO.copy(orig, new File(fileName))
+            jsonOk
+        } else {
+            jsonError("""{"ok":false,"error":"checksum"}""")
         }
-        
+    }
+    
+    def saveContent(fileName:String, content:String) = {
+        if(content == null) {
+            throw new UnexpectedException("content parameter is null")
+        }
+        val orig = CompilerDaemon.getFile(fileName)
+        IO.writeContent(content, orig)
         files.FIO.copy(orig, new File(fileName))
+        jsonOk
     }
     
     def compile(fileName:String) = {
@@ -68,4 +79,11 @@ object FileManager extends Controller {
     implicit val CompilationMessageFormat: Format[CompilationMessage] = asProduct3("row", "column", "text", "level")(CompilerDaemon)(CompilerDaemon.unapply(_).get)
     val json:dispatch.json.JsValue = JsonSerialization.tojson(CompilerDaemon.update)
     def parse = Json(json)*/
+    
+    def jsonOk() = Json("""{"ok":true}""")
+    
+    def jsonError(msg:String) = {
+        response.status = 404
+        Json(msg)
+    }
 }
