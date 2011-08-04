@@ -8,13 +8,7 @@ $(function() {
     
     $('.file').click(function() {
         var fileName = $(this).find('input').val();
-        $.ajax({
-            url: '/file/load',
-            data: { fileName: fileName },
-            success: function(content) {
-                openEditor(fileName, content);
-            }
-        })
+        loadEditor(fileName);
     });
     
     
@@ -29,27 +23,47 @@ $(function() {
     
     var currentEditor = null;
     var editors = {};
-    function openEditor(fileName, content) {
+    
+    function loadEditor(fileName) {
         var editor = editors[fileName];
-        if(editor == null) {
-            var editorContainer = $('#editor-container');
-            var tabsContainer = $('#tab-container');
-            
-            var editorPane = $('<pre class="editor-pane">' + content + '</pre>');
-            editorContainer.append(editorPane);
-            
-            var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
-            var editorTab = $('<span class="editor-tab">' + shortName + '</span>');
-            tabsContainer.append(editorTab);
-            editorTab.click(function() {
-                showEditor($(this).data('editor'));
-            });
-            
-            editor = new Editor(fileName, editorPane, editorTab);
-            editorTab.data('editor', editor);
-            editors[fileName] = editor;
+        
+        // Still loading the editor
+        if(editor === false) {
+            return;
         }
         
+        if(editor != null) {
+            showEditor(editor);
+        } else {
+            // Editor has not yet been created, so create it
+            editors[fileName] = false;
+            $.ajax({
+                url: '/file/load',
+                data: { fileName: fileName },
+                success: function(content) {
+                    openEditor(fileName, content);
+                }
+            })
+        }
+    }
+    
+    function openEditor(fileName, content) {
+        var editorContainer = $('#editor-container');
+        var tabsContainer = $('#tab-container');
+        
+        var editorPane = $('<pre class="editor-pane">' + content + '</pre>');
+        editorContainer.append(editorPane);
+        
+        var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
+        var editorTab = $('<span class="editor-tab">' + shortName + '</span>');
+        tabsContainer.append(editorTab);
+        editorTab.click(function() {
+            showEditor($(this).data('editor'));
+        });
+        
+        var editor = new Editor(fileName, editorPane, editorTab);
+        editorTab.data('editor', editor);
+        editors[fileName] = editor;
         showEditor(editor);
     }
     
