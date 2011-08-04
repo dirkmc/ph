@@ -81,6 +81,37 @@ $(function() {
     }
     
     
+    var fileTypes = {
+        scala: {
+            regexp: /\.scala(\.html)?$/i,
+            mode: "ace/mode/scala",
+            compile: true
+        },
+        css: {
+            regexp: /\.(css|less)$/i,
+            mode: "ace/mode/css"
+        }
+    };
+    
+    function getFileType(fileName) {
+        for(var lang in fileTypes) {
+            if(fileName.match(fileTypes[lang].regexp)) {
+                return fileTypes[lang];
+            }
+        }
+        
+        return null;
+    }
+    
+    function getAllModes() {
+        var modes = [];
+        for(var lang in fileTypes) {
+            modes.push(fileTypes[lang].mode);
+        }
+        return modes;
+    }
+    
+    var modes = getAllModes();
     function Editor(fileName, editorPane, editorTab) {
         var _self = this;
         this.editorPane = editorPane;
@@ -93,12 +124,11 @@ $(function() {
                 baseUrl: baseUrl,
                 paths: paths
             },
-            ['ace/ace', 'ace/mode/scala', 'server'],
-            function(ace, scala, server) {
+            ['ace/ace', 'server'].concat(modes),
+            function(ace, server, css) {
                 _self.editor = ace.edit(editorPane[0]);
                 _self.editor.setTheme("ace/theme/eclipse");
                 var doc = _self.editor.getSession().getDocument();
-                var isScala = fileName.match(/.scala(.html)?$/) != null;            
                 
                 _self.serverInterface = new server.ServerInterface({
                     fileName: fileName,
@@ -112,10 +142,13 @@ $(function() {
                     _self.serverInterface.addDelta(e.data);
                 });
                 
-                if(isScala) {
-                    var ScalaMode = scala.Mode;
-                    _self.editor.getSession().setMode(new ScalaMode());
-                    _self.serverInterface.compile();
+                var fileType = getFileType(fileName);
+                if(fileType) {
+                    var FileTypeMode = require(fileType.mode).Mode;
+                    _self.editor.getSession().setMode(new FileTypeMode());
+                    if(fileType.compile) {
+                        _self.serverInterface.compile();
+                    }
                 }
             }
         );
