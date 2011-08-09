@@ -25,7 +25,6 @@ var ProjectView = function(gui) {
     }
 
     this.show = function() {
-        console.log('show project');
     }
     
 }).call(ProjectView.prototype);

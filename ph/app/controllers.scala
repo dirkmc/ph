@@ -87,3 +87,25 @@ object FileManager extends Controller {
         Json(msg)
     }
 }
+
+
+object Project extends Controller {
+    def recent(filter:String) = {
+        val files = flattenFiles(new File(Application.root), filter.r).take(20)
+        val json = files.map(f => {
+            "\"" + f.getAbsolutePath + "\""
+        }).mkString("[", ",", "]")
+        Json(json)
+    }
+
+    def flattenFiles(path:File, filter: scala.util.matching.Regex):Seq[File] = {
+        if(path.isDirectory && !path.equals(CompilerDaemon.phCache)) {
+            path.listFiles.toSeq.collect({
+                case f if f.isFile && filter.unapplySeq(f.getName).isDefined => Seq(f.getAbsoluteFile)
+                case f if f.isDirectory => flattenFiles(f, filter)
+            }).flatten
+        } else {
+            Nil
+        }
+    } 
+}

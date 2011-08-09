@@ -92,6 +92,7 @@ function LeftPane() {
     
     this.add = function(viewName, view) {
         this.views[viewName] = view;
+        $('#left-pane').append(view.getWindow());
     }
     
     this.show = function(viewName) {
@@ -112,6 +113,7 @@ var Gui = function() {
     this.leftPane = new LeftPane();
     this.leftPane.add("project", new ProjectView(this));
     this.leftPane.add("recent", new RecentView(this));
+    this.leftPane.show("project");
     
     this.initCommands();
 };
@@ -187,7 +189,7 @@ var Gui = function() {
         editor.editorPane.show();
         
         document.title = editor.fileName;
-    }
+    };
     
     this.closeEditor = function(editor) {
         editor.editorPane.remove();
@@ -195,7 +197,11 @@ var Gui = function() {
         this.editors[editor.fileName] = null;
         this.editorQueue.remove(editor);
         this.showEditor(this.editorQueue.peek());
-    }
+    };
+    
+    this.getProjectRoot = function() {
+        return '/Users/dirk/dev/projects/yabe';
+    };
     
     this.initCommands = function() {
         var _self = this;
@@ -213,17 +219,29 @@ var Gui = function() {
         });
         
         canon.addCommand({
-            name: "recent",
+            name: "show-recent",
             bindKey: {
                 win: "Ctrl-Shift-R",
                 mac: "Command-Shift-R",
                 sender: "editor"
             },
             exec: function(env, args, request) {
-                this.leftPane.show('recent');
+                _self.leftPane.show('recent');
             }
         });
-    }
+        
+        canon.addCommand({
+            name: "show-project",
+            bindKey: {
+                win: "Ctrl-Shift-N",
+                mac: "Command-Shift-N",
+                sender: "editor"
+            },
+            exec: function(env, args, request) {
+                _self.leftPane.show('project');
+            }
+        });
+    };
     
 }).call(Gui.prototype);
 
