@@ -7,8 +7,10 @@
 
 <link href="/public/stylesheets/editor.less" rel="stylesheet" type="text/css" charset="utf-8"></link>
     
-<div id="files-window">
-  @fileList(root)
+<div id="left-pane">
+  <div id="project-view">
+    @fileList(root)
+  </div>
 </div>
 
 <div id="editors">
@@ -19,7 +21,7 @@
 
 <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript" language="javascript" charset="utf-8"></script>-->
 <!--<script src="https://raw.github.com/douglascrockford/JSON-js/master/json2.js" type="text/javascript" charset="utf-8"></script>-->
-<script data-main="/public/javascripts/editor.js" src="/public/javascripts/require-jquery.js" type="text/javascript" charset="utf-8"></script>
+<script data-main="/public/javascripts/boot.js" src="/public/javascripts/require-jquery.js" type="text/javascript" charset="utf-8"></script>
 
 </body>
 </html>
