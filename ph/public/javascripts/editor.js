@@ -21,8 +21,30 @@ $(function() {
     };
     
     
-    var currentEditor = null;
+    function EditorQueue() {
+        this.queue = [];
+        
+        this.remove = function(editor) {
+            for(var i = 0; i < this.queue.length; i++) {
+                if(editor == this.queue[i]) {
+                    this.queue.splice(i, 1);
+                    return;
+                }
+            }
+        }
+        
+        this.peek = function() {
+            return this.queue[this.queue.length - 1];
+        }
+        
+        this.push = function(editor) {
+            this.remove(editor);
+            this.queue.push(editor);
+        }
+    }
+    
     var editors = {};
+    var editorQueue = new EditorQueue();
     
     function loadEditor(fileName) {
         var editor = editors[fileName];
@@ -55,10 +77,19 @@ $(function() {
         editorContainer.append(editorPane);
         
         var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
-        var editorTab = $('<span class="editor-tab">' + shortName + '</span>');
+        var tabHtml = '<span class="editor-tab">';
+        tabHtml += '<span class="editor-name">';
+        tabHtml += shortName;
+        tabHtml += '</span>';
+        tabHtml += '<span class="editor-close">x</span>';
+        tabHtml += '</span>';
+        var editorTab = $(tabHtml);
         tabsContainer.append(editorTab);
-        editorTab.click(function() {
-            showEditor($(this).data('editor'));
+        editorTab.find('.editor-name').click(function() {
+            showEditor($(this).parent().data('editor'));
+        });
+        editorTab.find('.editor-close').click(function() {
+            closeEditor($(this).parent().data('editor'));
         });
         
         var editor = new Editor(fileName, editorPane, editorTab);
@@ -68,7 +99,11 @@ $(function() {
     }
     
     function showEditor(editor) {
-        currentEditor = editor;
+        if(editor == null) {
+            document.title = '';
+            return;
+        }
+        editorQueue.push(editor);
         var tabsContainer = $('#tab-container');
         tabsContainer.children().removeClass('selected');
         editor.editorTab.addClass('selected');
@@ -78,6 +113,15 @@ $(function() {
         editor.editorPane.show();
         
         document.title = editor.fileName;
+    }
+    
+    function closeEditor(editor) {
+        editor.editorPane.remove();
+        editor.editorTab.remove();
+        editors[editor.fileName] = null;
+        
+        editorQueue.remove(editor);
+        showEditor(editorQueue.peek());
     }
     
     
@@ -174,6 +218,7 @@ $(function() {
                     sender: "editor"
                 },
                 exec: function(env, args, request) {
+                    var currentEditor = editorQueue.peek();
                     currentEditor && currentEditor.saveFile();
                 }
             });

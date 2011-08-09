@@ -63,7 +63,7 @@ var ServerInterface = function(settings) {
             // in order for chaining to work
             ajaxCall.oldError = ajaxCall.error;
             ajaxCall.error = function() {
-                ajaxCall.oldError.apply(ajaxCall, arguments)
+                ajaxCall.oldError && ajaxCall.oldError.apply(ajaxCall, arguments)
             }
             
             $.ajax(ajaxCall);
