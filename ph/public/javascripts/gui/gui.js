@@ -5,6 +5,7 @@ var canon = require("pilot/canon");
 var ServerInterface = require("gui/server").ServerInterface;
 var RecentView = require('gui/views/recent').RecentView;
 var ProjectView = require('gui/views/project').ProjectView;
+var AutoCompleteWidget = require('gui/widgets/auto_complete').AutoCompleteWidget;
 var ScalaMode = require('ace/mode/scala').Mode;
 var CssMode = require('ace/mode/css').Mode;
 
@@ -38,6 +39,8 @@ function Editor(fileName, editorPane, editorTab) {
     
     this.editor = ace.edit(editorPane[0]);
     this.editor.setTheme("ace/theme/eclipse");
+    this.autoComplete = new AutoCompleteWidget(this);
+    
     var doc = this.editor.getSession().getDocument();
     
     this.serverInterface = new ServerInterface({
@@ -48,8 +51,10 @@ function Editor(fileName, editorPane, editorTab) {
         }
     });
     
+    this.autoCompleteTimeout = null;
     doc.on("change", function(e) {
         _self.serverInterface.addDelta(e.data);
+        _self.autoComplete.checkForAutoComplete(e.data);
     });
     
     var fileType = getFileType(fileName);

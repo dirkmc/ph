@@ -73,6 +73,11 @@ object FileManager extends Controller {
                 msg => {"""{"source":"""" + msg.source.get + """", "row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""}).mkString("[", ",", "]")
         Json(json)
     }
+    
+    def autoComplete(fileName:String, row:Int, column:Int) = {
+        Json("[\"test\",\"another\",\"last\"]")
+    }
+    
     /*
     import sjson.json._
     import CompilerDaemon.CompilationMessage

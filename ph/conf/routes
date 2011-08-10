@@ -13,6 +13,7 @@ GET     /file/load.html                         FileManager.loadHtml
 POST    /file/save.json                         FileManager.save
 POST    /file/save/content.json                 FileManager.saveContent
 POST    /file/deltas.json                       FileManager.deltas
+GET     /file/auto-complete.json                FileManager.autoComplete
 
 GET     /project/recent.json                    Project.recent
 
