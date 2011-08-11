@@ -48,13 +48,14 @@ function Editor(fileName, editorPane, editorTab) {
         newLine: doc.getNewLineCharacter(),
         onCompile: function(msgs) {
             _self.editor.getSession().setAnnotations(msgs);
-        }
+        },
+        editor: this
     });
     
     this.autoCompleteTimeout = null;
     doc.on("change", function(e) {
+        _self.autoComplete.close();
         _self.serverInterface.addDelta(e.data);
-        _self.autoComplete.checkForAutoComplete(e.data);
     });
     
     var fileType = getFileType(fileName);

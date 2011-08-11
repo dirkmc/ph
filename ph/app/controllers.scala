@@ -40,9 +40,24 @@ object FileManager extends Controller {
     def load(fileName:String) = IO.readContentAsString(CompilerDaemon.getFile(fileName))
     def loadHtml(fileName:String) = Html("<pre>" + IO.readContentAsString(CompilerDaemon.getFile(fileName)) + "</pre>")
     
-    def deltas(fileName:String, deltas:String, compileAfter:Boolean = false) = {
+    def deltas(fileName:String, deltas:String, cursorRow:Int, cursorColumn:Int, compile:Boolean = false, autoComplete:Boolean = false) = {
         files.Delta.applyDeltas(CompilerDaemon.getFile(fileName), deltas)
-        if(!compileAfter) jsonOk else compile(fileName) 
+        
+        var json = "";
+        if(autoComplete) {
+            val options = files.AutoComplete.get(CompilerDaemon.getFile(fileName), cursorRow, cursorColumn)
+            json += "\"autoComplete\":{" +
+                "\"options\":" + options.mkString("[\"", "\",\"", "\"]") + "," +
+                "\"row\":" + cursorRow + "," +
+                "\"column\":" + cursorColumn +
+                "}"
+        }
+        if(compile) {
+            if(json.length > 0) json += ","
+            json += "\"compile\":" + compileJson(fileName)
+        }
+        
+        if(json.length > 0) Json("{"+json+"}") else jsonOk
     }
     
     def save(fileName:String, checksum:Int) = {
@@ -66,16 +81,14 @@ object FileManager extends Controller {
         jsonOk
     }
     
-    def compile(fileName:String) = {
+    def compile(fileName:String) = Json(compileJson(fileName))
+    def compileJson(fileName:String) = {
         val cachedFile = CompilerDaemon.getFile(fileName)
-        val json = CompilerDaemon.compile().filter(
+        // TODO: Proper escaping of error message
+        CompilerDaemon.compile().filter(
                 msg => msg.source.get.equals(cachedFile)).map(
-                msg => {"""{"source":"""" + msg.source.get + """", "row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""}).mkString("[", ",", "]")
-        Json(json)
-    }
-    
-    def autoComplete(fileName:String, row:Int, column:Int) = {
-        Json("[\"test\",\"another\",\"last\"]")
+                msg => {"""{"source":"""" + msg.source.get + """", "row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""})
+                .mkString("[", ",", "]")
     }
     
     /*

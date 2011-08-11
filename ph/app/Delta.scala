@@ -17,7 +17,7 @@ object Delta {
     
     def applyDeltas(file:File, serializedDeltas:String) = {
         var lines = IO.readLines(file).toList
-        val deltas = serializedDeltas.split("\n").map(delta => delta match {
+        serializedDeltas.split("\n").map(delta => delta match {
             case Insert(colI, rowI, textS) => {
                 val text = textS.replace("\\n", "\n")
                 val col = colI.toInt

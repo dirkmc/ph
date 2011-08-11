@@ -7,8 +7,6 @@ var AutoCompleteWidget = function(editor) {
     this.optionList = $('<ul class="recent-file-list"></ul>');
     this.win.append(this.optionList);
     $(document.body).append(this.win);
-    
-    this.autoCompleteTimeout = null;
 };
 
 (function(){
@@ -18,55 +16,42 @@ var AutoCompleteWidget = function(editor) {
     };
     
     this.checkForAutoComplete = function(delta) {
-        // If a single character has been typed or pasted
+        // Check that a single character has been typed or pasted
         var range = delta.range;
-        if(delta.action == "insertText" &&
-                range.end.row == range.start.row &&
-                (range.end.column - range.start.column == 1)) {
-            
-            // Check for auto complete
-            clearTimeout(this.autoCompleteTimeout);
-            var _self = this;
-            this.autoCompleteTimeout = setTimeout(function() {
-                _self.delayedCheckForAutoComplete(delta);
-            }, 500);
+        if(delta.action != "insertText" ||
+                range.end.row != range.start.row ||
+                (range.end.column - range.start.column != 1)) {
+            return false;
         }
-    };
-    
-    this.delayedCheckForAutoComplete = function(delta) {
-        // Make sure we're still at the same position in the document
+            
+        // Make sure we're still at the same position in the document as when
+        // the character was typed (the cursor may have moved)
         var deltaPos = delta.range.end;
         var currentPos = this.editor.editor.getCursorPosition();
         if(currentPos.row != deltaPos.row || currentPos.column != deltaPos.column) {
-            return;
+            return false;
         }
         
         // If the dot was just pressed, check for auto-complete
         var doc = this.editor.editor.getSession().getDocument();
         if(currentPos.column > 0 && doc.getLine(currentPos.row).charAt(currentPos.column - 1) == '.') {
-            this.show();
+            return true;
         }
+        
+        return false;
     };
 
-    this.show = function() {
-        this.optionList.empty();
-        this.win.show();
+    this.show = function(autoComplete) {
         var currentPos = this.editor.editor.getCursorPosition();
+        if(!autoComplete ||
+           autoComplete.row != currentPos.row ||
+           autoComplete.column != currentPos.column
+        ) {
+            this.close();
+            return;
+        }
         
-        var _self = this;
-        $.ajax({
-            url: '/file/auto-complete.json',
-            type: 'GET',
-            dataType: 'json',
-            data: {
-                row: currentPos.row,
-                column: currentPos.column,
-                fileName: _self.editor.fileName
-            },
-            success: function(options) {
-                _self.showOptionList(options);
-            }
-        });
+        this.showOptionList(autoComplete.options);
     };
     
     this.showOptionList = function(options) {
@@ -80,6 +65,7 @@ var AutoCompleteWidget = function(editor) {
             });
             this.optionList.append(li);
         }
+        this.win.show();
     };
     
     this.close = function() {

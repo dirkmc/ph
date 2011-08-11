@@ -66,6 +66,9 @@ var ServerInterface = function(settings) {
                 ajaxCall.oldError && ajaxCall.oldError.apply(ajaxCall, arguments)
             }
             
+            // Call the onSend method if there is one
+            ajaxCall.onSend && ajaxCall.onSend.apply(ajaxCall);
+            
             $.ajax(ajaxCall);
         }
     };
@@ -88,6 +91,7 @@ var ServerInterface = function(settings) {
             return;
         }
         
+        var cursorPos = this.settings.editor.editor.getCursorPosition();
         var _self = this;
         this.enqueue({
             url: '/file/deltas.json',
@@ -96,10 +100,26 @@ var ServerInterface = function(settings) {
             data: {
                 fileName: this.settings.fileName,
                 deltas: serializeDeltas(this.settings.newLine, deltas),
-                compileAfter: true
+                compile: true,
+                cursorRow: cursorPos.row,
+                cursorColumn: cursorPos.column
             },
-            success: function(data) {
-                _self.settings.onCompile(getCompileErrors(data))
+            onSend: function() {
+                var delta = deltas[deltas.length - 1];
+                this.data.autoComplete = _self.settings.editor.autoComplete.checkForAutoComplete(delta);
+                this.data.compile = !this.data.autoComplete
+            },
+            success: function(response) {
+                if(response.compile !== null && typeof response.compile != 'undefined') {
+                    _self.settings.onCompile(getCompileMessages(response))
+                }
+                _self.settings.editor.autoComplete.show(response.autoComplete);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log("Error:");
+                console.log(jqXHR);
+                console.log(textStatus);
+                console.log(errorThrown);
             }
         });
     };
@@ -126,8 +146,8 @@ var ServerInterface = function(settings) {
             data: {
                 fileName: this.settings.fileName
             },
-            success: function(data) {
-                _self.settings.onCompile(getCompileErrors(data))
+            success: function(response) {
+                _self.settings.onCompile(getCompileMessages(response))
             }
         });
     };
@@ -187,7 +207,8 @@ var ServerInterface = function(settings) {
         }
     }
     
-    function getCompileErrors(messages) {
+    function getCompileMessages(response) {
+        var messages = response.compile ? response.compile : [];
         var msgs = [];
         for(var i = 0; i < messages.length; i++) {
             msgs.push({
@@ -197,7 +218,6 @@ var ServerInterface = function(settings) {
                 type: (messages[i].type == "Error" ? "error" : messages[i].type)
             });
         }
-        
         return msgs;
     }
 
