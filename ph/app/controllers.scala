@@ -83,12 +83,32 @@ object FileManager extends Controller {
     
     def compile(fileName:String) = Json(compileJson(fileName))
     def compileJson(fileName:String) = {
+        def getType(severity: Int) = severity match {
+            case 1 => "warning"
+            case 2 => "error"
+            case _ => "ignore"
+        }
+        
         val cachedFile = CompilerDaemon.getFile(fileName)
+        CompilerDaemon.newCompile(cachedFile).map(
+            prob => {
+              val src = CompilerDaemon.getOriginalFile(prob.pos.source.path).getAbsolutePath
+              "{" +
+              "\"source\":\"" + src + "\"," +
+              "\"row\":" + prob.pos.line + "," +
+              "\"column\":" + prob.pos.column + "," +
+              "\"text\":\"" + prob.msg.replace("\"", "\\\"").replace("\n", "") + "\"," +
+              "\"type\":\"" + getType(prob.severity) + "\"" +
+              "}"
+            }).mkString("[", ",", "]")
+        
+        /*
         // TODO: Proper escaping of error message
         CompilerDaemon.compile().filter(
                 msg => msg.source.get.equals(cachedFile)).map(
                 msg => {"""{"source":"""" + msg.source.get + """", "row":""" + msg.line.get + """, "column":""" + msg.marker.get + """, "text":"""" + msg.message + """", "type":"""" + msg.severity + """"}"""})
                 .mkString("[", ",", "]")
+        */
     }
     
     /*

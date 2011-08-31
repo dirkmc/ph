@@ -14,13 +14,39 @@ object CompilerDaemon {
     
     val cacheDir = ".phcache"
     val phCache = new File(Application.root, cacheDir)
-        
+    // TODO: Make CompilerDaemon a class instead of an object
+    var newCompiler: PresentationCompiler = null
+    
     def init() {
         if(phCache.exists) phCache.delete
         phCache.mkdirs
         
         val root = new File(Application.root)
         copy(root, phCache)
+        newCompiler = {
+            val srcDirs = {
+                val srcRoot = new File(phCache, "app")
+                val generatedSource = new File(phCache, "/tmp/generated");
+                Seq(srcRoot, generatedSource)
+            }
+            val sourceFiles = srcDirs.map(PresentationCompiler.scanFiles(_)).flatten.toSeq
+            
+            val playRoot = "/Users/dirk/dev/play-releases/play-head"
+            val libDirs = {
+                val playLibs = playRoot + "/framework/lib"
+                val scalaLibs = "/Users/dirk/dev/frameworks/play-scala-dirkmc/lib"
+                Seq(playLibs, scalaLibs)
+            }
+            val jars = {
+              val libJars = libDirs.map(libDir => new File(libDir).listFiles(new java.io.FilenameFilter {
+                override def accept(dir: File, name: String) = name.endsWith(".jar")
+              })).flatten.map(_.getAbsolutePath)
+              val playJar = playRoot + "/framework/play-1.2.x-ec5dcf4.jar"
+              libJars ++ Seq(playJar)
+            }
+            
+            new PresentationCompiler(sourceFiles, jars)
+        }
     }
     
     def copy(fromDir:File, toDir:File) {
@@ -40,13 +66,23 @@ object CompilerDaemon {
         )
     }
     
-    def getFile(fileName:String) = {
-        if(!fileName.startsWith(Application.root) || fileName.length < Application.root.length + 1) {
-            throw new UnexpectedException("Invalid file name requested: " + fileName);
+    def getFile(filePath:String) = {
+        if(!filePath.startsWith(Application.root) || filePath.length < Application.root.length + 1) {
+            throw new UnexpectedException("Invalid file name requested: " + filePath);
         }
         
-        val relativePath = fileName.substring(Application.root.length + 1);
+        val relativePath = filePath.substring(Application.root.length + 1);
         new File(phCache, relativePath);
+    }
+    
+    def getOriginalFile(filePath:String) = {
+        val cachePath = phCache.getAbsolutePath
+        if(!filePath.startsWith(cachePath) || filePath.length < cachePath.length + 1) {
+            throw new UnexpectedException("Invalid file requested: " + filePath);
+        }
+        
+        val relativePath = filePath.substring(cachePath.length + 1);
+        new File(Application.root, relativePath);
     }
 
     val compiler = new PlayScalaCompiler(
@@ -79,6 +115,34 @@ object CompilerDaemon {
             }
             case _ => Seq()
         }
+    }
+    
+    def update() {
+        val srcRoot = new File(phCache, "app")
+        val generatedSource = new File(phCache, "/tmp/generated");
+        generatedSource.mkdirs
+        val sourcePaths = List(srcRoot, generatedSource)
+        
+        // Sync generated
+        generated(generatedSource).foreach(_.sync())
+
+        // Generate templates
+        // TODO: Check if template file has actually changed before generating
+        templates(sourcePaths).foreach(ScalaTemplateCompiler.compile(_, generatedSource))
+        
+        // TODO: Cache list of files so I don't have to scan every time?
+        val newSources = sources(sourcePaths)
+        newCompiler.loadSources(newSources)
+    }
+    
+    def newCompile(file: File): Seq[PresentationCompiler.Problem] = {
+        update()
+        newCompiler.compile(file)
+    }
+    
+    def complete(file: File, line: Int, column: Int): Seq[PresentationCompiler.CompleteOption] = {
+        update()
+        newCompiler.complete(file, line, column)
     }
     
     

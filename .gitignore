@@ -4,6 +4,7 @@
 .settings/
 ph/.classpath
 ph/.project
+ph/.phcache
 ph/.scala_dependencies
 ph/bin/
 ph/eclipse/

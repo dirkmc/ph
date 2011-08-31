@@ -215,7 +215,7 @@ var ServerInterface = function(settings) {
                 row: messages[i].row - 1,
                 column: messages[i].column,
                 text: messages[i].text,
-                type: (messages[i].type == "Error" ? "error" : messages[i].type)
+                type: messages[i].type
             });
         }
         return msgs;
