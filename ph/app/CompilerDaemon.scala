@@ -118,6 +118,11 @@ object CompilerDaemon {
     }
     
     def update() {
+        // TODO: Remove when we go to prod
+        if(newCompiler == null) {
+            init()
+        }
+      
         val srcRoot = new File(phCache, "app")
         val generatedSource = new File(phCache, "/tmp/generated");
         generatedSource.mkdirs

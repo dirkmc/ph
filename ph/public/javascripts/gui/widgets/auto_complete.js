@@ -51,20 +51,30 @@ var AutoCompleteWidget = function(editor) {
             return;
         }
         
-        this.showOptionList(autoComplete.options);
+        this.showOptionList(autoComplete);
     };
     
-    this.showOptionList = function(options) {
+    this.showOptionList = function(autoComplete) {
+        var options = autoComplete.options;
         var _self = this;
         this.optionList.empty();
         for(var i = 0; i < options.length; i++) {
-            var li = $('<li>' + options[i] + '</li>');
-            li.data('option', options[i]);
+            var option = options[i];
+            var optionString = option.name + option.symType;
+            var li = $('<li>' + optionString + '</li>');
+            li.data('option', option);
             li.click(function() {
                 _self.close();
             });
             this.optionList.append(li);
         }
+        
+        var row = autoComplete.row;
+        var column = autoComplete.column;
+        var renderer = this.editor.editor.renderer;
+        var coords = renderer.textToScreenCoordinates(row, column);
+        this.win.css('left', coords.pageX);
+        this.win.css('top', coords.pageY + renderer.lineHeight);
         this.win.show();
     };
     

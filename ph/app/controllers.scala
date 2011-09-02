@@ -44,17 +44,35 @@ object FileManager extends Controller {
         files.Delta.applyDeltas(CompilerDaemon.getFile(fileName), deltas)
         
         var json = "";
+        if(compile) {
+            json += "\"compile\":" + compileJson(fileName)
+        }
         if(autoComplete) {
+            if(json.length > 0) json += ","
+            val cachedFile = CompilerDaemon.getFile(fileName)
+            val options = CompilerDaemon.complete(cachedFile, cursorRow, cursorColumn)
+            val optionsString = options.map(o => {
+                "{" +
+                    "\"kind\":\"" + o.kind + "\"," +
+                    "\"name\":\"" + o.name + "\"," +
+                    "\"fullName\":\"" + o.fullName + "\"," +
+                    "\"symType\":\"" + o.symType + "\"" +
+                "}"
+            }).mkString("[", ",", "]")
+            
+            json += "\"autoComplete\":{" +
+                "\"options\":" + optionsString + "," +
+                "\"row\":" + cursorRow + "," +
+                "\"column\":" + cursorColumn +
+                "}"
+            /*
             val options = files.AutoComplete.get(CompilerDaemon.getFile(fileName), cursorRow, cursorColumn)
             json += "\"autoComplete\":{" +
                 "\"options\":" + options.mkString("[\"", "\",\"", "\"]") + "," +
                 "\"row\":" + cursorRow + "," +
                 "\"column\":" + cursorColumn +
                 "}"
-        }
-        if(compile) {
-            if(json.length > 0) json += ","
-            json += "\"compile\":" + compileJson(fileName)
+            */
         }
         
         if(json.length > 0) Json("{"+json+"}") else jsonOk

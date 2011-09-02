@@ -62,7 +62,7 @@ function Editor(fileName, editorPane, editorTab) {
     if(fileType) {
         this.editor.getSession().setMode(new fileType.mode());
         if(fileType.compile) {
-            this.serverInterface.compile();
+            //this.serverInterface.compile();
         }
     }
     
@@ -122,6 +122,7 @@ var Gui = function() {
     this.leftPane.show("project");
     
     this.initCommands();
+    this.loadEditor('/Users/dirk/dev/projects/yabe/app/controllers.scala');
 };
 
 (function(){

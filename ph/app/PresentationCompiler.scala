@@ -89,9 +89,47 @@ class PresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String]) {
   }
   
   def complete(src: JFile, line: Int, column: Int): Seq[CompleteOption] = {
-    // TODO: Completion
-    //val completeResult = new Response[List[compiler.Member]]
-    Seq[CompleteOption]()
+    val sourceFile = toSourceFile(src)
+    val completeResult = new Response[List[compiler.Member]]
+    val typedResult = new Response[compiler.Tree]
+    
+    // We have to ask type before asking for type completion
+    // TODO: Do I need to ask type on entire file or is it better to ask type
+    // against the sub-tree containing the position?
+    compiler.askType(sourceFile, false, typedResult)
+    typedResult.get
+    compiler.askTypeCompletion(sourceFile.position(line, column), completeResult);
+    
+    val options = completeResult.get match {
+      case Left(optionList) => optionList
+        .filter(_.getClass.equals(classOf[compiler.TypeMember]))
+        .filter(_.sym.decodedName.matches("^[a-zA-Z_].*"))
+        .map(option => {
+          val typeMember = option.asInstanceOf[compiler.TypeMember]
+          /*
+          println(typeMember.sym)
+          println(typeMember.tpe)
+          println(typeMember.asInstanceOf[compiler.TypeMember])
+          println(typeMember.accessible)
+          println(typeMember.inherited)
+          println(typeMember.viaView)
+          println("=====================")
+          println(option.sym)
+          println(option.sym.kindString)
+          println(option.sym.simpleName)
+          println(option.sym.fullName)
+          println(option.sym.encodedName)
+          println(option.sym.decodedName)
+          println(option.sym.infoString(option.tpe))
+          println(option.sym.infosString)
+          println("=====================")
+          */
+          CompleteOption(option.sym.kindString, option.sym.decodedName.toString, option.sym.fullName, option.sym.infoString(option.tpe))
+        }).sortWith((o1, o2) => (o1.name < o2.name))
+      case _ => List[CompleteOption]()
+    }
+    
+    options.toSeq
   }
   
   
@@ -150,5 +188,5 @@ object PresentationCompiler {
   }
   
   case class Problem(pos: Position, msg: String, severity: Int)
-  case class CompleteOption(text: String)
+  case class CompleteOption(kind: String, name: String, fullName: String, symType: String)
 }
