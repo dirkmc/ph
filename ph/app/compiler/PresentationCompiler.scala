@@ -175,18 +175,6 @@ object PresentationCompiler {
   def toSourceFile(file: JFile): SourceFile = new BatchSourceFile(new PlainFile(file))
   def toSourceFile(name: String): SourceFile = toSourceFile(new JFile(name))
 
-  /* Taken from play scala plugin's ScalaCompiler */
-  def scanFiles(path: JFile, regex: scala.util.matching.Regex = "^[^.].*[.](scala|java)$".r ):Seq[JFile] = {
-    if(path.isDirectory) {
-        path.listFiles.toSeq.collect({
-            case f if f.isFile && regex.unapplySeq(f.getName).isDefined => Seq(f.getAbsoluteFile)
-            case f if f.isDirectory => scanFiles(f, regex)
-        }).flatten
-    } else {
-        Nil
-    }
-  }
-  
   case class Problem(pos: Position, msg: String, severity: Int)
   case class CompleteOption(kind: String, name: String, fullName: String, symType: String)
 }

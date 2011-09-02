@@ -98,7 +98,7 @@ var ServerInterface = function(settings) {
             type: 'POST',
             dataType: 'json',
             data: {
-                fileName: this.settings.fileName,
+                filePath: this.settings.fileName,
                 deltas: serializeDeltas(this.settings.newLine, deltas),
                 compile: true,
                 cursorRow: cursorPos.row,
@@ -144,7 +144,7 @@ var ServerInterface = function(settings) {
             type: 'GET',
             dataType: 'json',
             data: {
-                fileName: this.settings.fileName
+                filePath: this.settings.fileName
             },
             success: function(response) {
                 _self.settings.onCompile(getCompileMessages(response))
@@ -157,9 +157,9 @@ var ServerInterface = function(settings) {
         this.forceSendDeltas();
         
         // Simple checksum (Couldn't get JS CRC32 to work)
-        var checksum = value.length;
+        var checkSum = value.length;
         for(var c = 0; c < value.length; c++) {
-            checksum = (checksum + value.charAt(c).charCodeAt()) % 2147483647;
+            checkSum = (checkSum + value.charAt(c).charCodeAt()) % 2147483647;
         }
         
         var _self = this;
@@ -168,8 +168,8 @@ var ServerInterface = function(settings) {
             url: '/file/save.json',
             type: 'POST',
             data: {
-                fileName: _self.settings.fileName,
-                checksum: checksum
+                filePath: _self.settings.fileName,
+                checkSum: checkSum
             },
             // If saving deltas fails (eg because of a bad checksum) try
             // sending the entire file as a POST
@@ -177,12 +177,12 @@ var ServerInterface = function(settings) {
                 if(textStatus == 'error') {
                     var response = $.parseJSON(xhr.responseText);
                     if(response && response.error == 'checksum') {
-                        this.checksumError = true;
+                        this.checkSumError = true;
                     }
                 }
             },
             chain: function() {
-                if(!this.checksumError) {
+                if(!this.checkSumError) {
                     return null;
                 }
                 return _self.getSaveFileContentQueueItem(this.chainVal);
@@ -201,7 +201,7 @@ var ServerInterface = function(settings) {
             url: '/file/save/content.json',
             type: 'POST',
             data: {
-                fileName: this.settings.fileName,
+                filePath: this.settings.fileName,
                 content: value
             }
         }

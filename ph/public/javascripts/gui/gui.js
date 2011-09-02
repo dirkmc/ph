@@ -143,7 +143,7 @@ var Gui = function() {
             var _self = this;
             $.ajax({
                 url: '/file/load',
-                data: { fileName: fileName },
+                data: { filePath: fileName },
                 success: function(content) {
                     _self.openEditor(fileName, content);
                 }
