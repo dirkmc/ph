@@ -159,12 +159,12 @@ var Gui = function() {
         editorContainer.append(editorPane);
         
         var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
-        var tabHtml = '<span class="editor-tab">';
+        var tabHtml = '<div class="editor-tab">';
         tabHtml += '<span class="editor-name">';
         tabHtml += shortName;
         tabHtml += '</span>';
-        tabHtml += '<span class="editor-close">x</span>';
-        tabHtml += '</span>';
+        tabHtml += '<span class="editor-close">&nbsp;</span>';
+        tabHtml += '</div>';
         var editorTab = $(tabHtml);
         tabsContainer.append(editorTab);
         var that = this;

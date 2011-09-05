@@ -1,3 +1,26 @@
+.rounded-corners (@radius: 5px) {
+  .rounded-corners-top(@radius);
+  .rounded-corners-bottom(@radius);
+}
+
+.rounded-corners-top (@radius: 5px) {
+  border-top-left-radius: @radius;
+  border-top-right-radius: @radius;
+  -webkit-border-top-left-radius: @radius;
+  -webkit-border-top-right-radius: @radius;
+  -moz-border-radius-topleft: @radius;
+  -moz-border-radius-topright: @radius;
+}
+.rounded-corners-bottom (@radius: 5px) {
+  border-bottom-left-radius: @radius;
+  border-bottom-right-radius: @radius;
+  -webkit-border-bottom-left-radius: @radius;
+  -webkit-border-bottom-right-radius: @radius;
+  -moz-border-radius-bottomleft: @radius;
+  -moz-border-radius-bottomright: @radius;
+}
+
+
 body {
   margin: 0;
   padding: 0;
@@ -28,8 +51,15 @@ body {
     padding-left: 10px;
   }
   
+  .title {
+    cursor: pointer;
+    padding-left: 20px;
+    background-repeat: no-repeat;
+    background-image: url(/public/images/file.png);
+  }
+  
   .directory > .title {
-    background: #dddddd;
+    background-image: url(/public/images/folder.png);
   }
 }
 
@@ -86,17 +116,27 @@ body {
     width: 100%;
     
     .editor-tab {
+      .rounded-corners-top;
       padding: 0.25em 0.5em;
+      margin: 0 0.25em 0 0;
+      display: inline-block;
+      color: #444444;
+      background-color: #eeeeee;
       cursor: pointer;
-      
+
       .editor-close {
         margin: 0 0 0 0.5em;
-        background: #ffffff;
+        background: url(/public/images/close.png) no-repeat 0 2px;
+        display: inline-block;
+        width: 12px;
+      }
+      .editor-close:hover {
+        background-image: url(/public/images/close-hover.png);
       }
     }
     
     .selected {
-      background-color: #eeeeee;
+      background-color: #eeeeff;
     }
   }
   
