@@ -124,7 +124,13 @@ var AutoCompleteWidget = function(editor) {
                 widget.close();
             }
             
-            var text = self.getFilterText().toLowerCase();
+            var text = self.getFilterText();
+            if(text == null) {
+                widget.close();
+                return;
+            }
+            
+            text = text.toLowerCase();
             widget.optionList.find('li').each(function() {
                 var option = $(this).data('option');
                 if(option.name.toLowerCase().indexOf(text) == 0) {
@@ -221,11 +227,11 @@ var AutoCompleteWidget = function(editor) {
         
         this.getFilterText = function() {
             var text = doc.getLine(startRow).substring(startColumn);
-            var spacePos = text.indexOf(' ');
-            if(spacePos > 0) {
-                text = text.substring(0, spacePos);
+            var matches = /([a-zA-Z0-9_]+)/.exec(text);
+            if(matches == null || matches.length != 2) {
+                return null;
             }
-            return text;
+            return matches[1];
         };
         
         this.chosen = function(option) {
@@ -234,10 +240,10 @@ var AutoCompleteWidget = function(editor) {
             }
             var text = option.name + "()";
             var endColumn = startColumn + this.getFilterText().length;
+            widget.close();
             doc.removeInLine(startRow, startColumn, endColumn);
             doc.insertInLine({row: startRow, column: startColumn}, text);
             widget.editor.editor.moveCursorTo(startRow, startColumn + text.length - 1);
-            widget.close();
         };
         
         this.init();
