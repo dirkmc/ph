@@ -14,6 +14,7 @@ var AutoCompleteWidget = function(editor) {
         self.close();
     });
     
+    this.maxBottom = $(document).height();
     $(document.body).append(this.win);
 };
 
@@ -92,8 +93,19 @@ var AutoCompleteWidget = function(editor) {
         this.win.css('top', coords.pageY + renderer.lineHeight);
         this.win.show();
         this.win.focus();
+        this.updatePosition();
         
         this.listener = new AutoCompleteListener(this, row, column);
+    };
+    
+    this.updatePosition = function() {
+        var offset = this.win.offset();
+        var bottom = offset.top + this.win.height();
+        if(bottom > this.maxBottom) {
+            this.win.css('height', this.maxBottom - offset.top);
+        } else {
+            this.win.css('height', this.win.find('ul').height());
+        }
     };
     
     this.close = function() {
@@ -139,6 +151,8 @@ var AutoCompleteWidget = function(editor) {
                     $(this).hide();
                 }
             });
+            
+            widget.updatePosition();
             
             self.setSelectedIndex(0);
         };
@@ -218,7 +232,14 @@ var AutoCompleteWidget = function(editor) {
             }
             
             widget.optionList.find('li').removeClass('selected');
-            visibleElements.eq(index).addClass('selected');
+            var selectedLi = visibleElements.eq(index);
+            selectedLi.addClass('selected');
+            var liBottom = selectedLi.offset().top + selectedLi.height();
+            if(liBottom > widget.maxBottom) {
+                selectedLi.get(0).scrollIntoView(false);
+            } else if(liBottom < widget.win.offset().top) {
+                selectedLi.get(0).scrollIntoView(true);
+            }
         };
         
         this.getSelectedIndex = function() {
@@ -239,7 +260,8 @@ var AutoCompleteWidget = function(editor) {
                 return;
             }
             var text = option.name + "()";
-            var endColumn = startColumn + this.getFilterText().length;
+            var filterText = this.getFilterText();
+            var endColumn = startColumn + (filterText ? filterText.length : 0);
             widget.close();
             doc.removeInLine(startRow, startColumn, endColumn);
             doc.insertInLine({row: startRow, column: startColumn}, text);
