@@ -71,7 +71,7 @@ class Project(projectPath: String) {
     new File(projectPath, relativePath);
   }
 
-  def getContents(filePath: String) = IO.readContentAsString(getFile(filePath))
+  def getContents(filePath: String) = IO.readContentAsString(new File(filePath))
   
   def applyDeltas(filePath: String, deltas: String) = {
     io.Delta.applyDeltas(getFile(filePath), deltas)
