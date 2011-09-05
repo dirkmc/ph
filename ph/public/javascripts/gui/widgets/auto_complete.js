@@ -186,11 +186,11 @@ var AutoCompleteWidget = function(editor) {
                     self.setSelectedIndex(self.getSelectedIndex() + 1);
                     break;
                 }
-            }
-            
-            var c = String.fromCharCode(e.charCode);
-            if(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
-                widget.editor.editor.insert(c);
+                default: {
+                    if(e.charCode != 0) {
+                        widget.editor.editor.insert(String.fromCharCode(e.charCode));
+                    }
+                }
             }
             
             // If we've moved outside the range of the auto-complete text, close
