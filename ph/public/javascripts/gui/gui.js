@@ -54,7 +54,7 @@ function Editor(fileName, editorPane, editorTab) {
     
     this.autoCompleteTimeout = null;
     doc.on("change", function(e) {
-        _self.autoComplete.close();
+        //_self.autoComplete.close();
         _self.serverInterface.addDelta(e.data);
     });
     

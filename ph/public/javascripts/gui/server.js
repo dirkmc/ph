@@ -113,7 +113,9 @@ var ServerInterface = function(settings) {
                 if(response.compile !== null && typeof response.compile != 'undefined') {
                     _self.settings.onCompile(getCompileMessages(response))
                 }
-                _self.settings.editor.autoComplete.show(response.autoComplete);
+                if(response.autoComplete !== null && typeof response.autoComplete != 'undefined') {
+                    _self.settings.editor.autoComplete.show(response.autoComplete);
+                }
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 console.log("Error:");
