@@ -2,9 +2,18 @@ define(function(require, exports, module) {
 
 var AutoCompleteWidget = function(editor) {
     this.editor = editor;
+    this.listener = null;
+    
     this.win = $('<div id="auto-complete-widget" class="widget" tabindex="0"></div>');
     this.optionList = $('<ul class="recent-file-list"></ul>');
     this.win.append(this.optionList);
+    
+    // When the widget loses focus, close it
+    var self = this;
+    this.win.blur(function() {
+        self.close();
+    });
+    
     $(document.body).append(this.win);
 };
 
@@ -87,63 +96,108 @@ var AutoCompleteWidget = function(editor) {
         this.listener = new AutoCompleteListener(this, row, column);
     };
     
+    this.close = function() {
+        this.listener && this.listener.destroy();
+        this.listener = null;
+        
+        this.win.hide();
+        this.editor.editor.focus();
+    };
+    
     function AutoCompleteListener(widget, startRow, startColumn) {
         var self = this;
         var doc = widget.editor.editor.getSession().getDocument();
         
         this.init = function() {
             doc.addEventListener("change", this.onDocChange); 
-            widget.win.bind("keydown", this.onWidgetKeyDown);
+            widget.win.bind("keypress", this.onWidgetKeyPress);
             this.setSelectedIndex(0);
         }
         
         this.destroy = function() {
             doc.removeListener("change", this.onDocChange); 
-            widget.win.unbind("keydown", this.onWidgetKeyDown);
+            widget.win.unbind("keypress", this.onWidgetKeyPress);
         }
         
         this.onDocChange = function(e) {
-            if(e.data.range.end.row != startRow || e.data.range.end.column < startColumn) {
+            if(e.data.range.end.row != startRow || e.data.range.end.column <= startColumn) {
                 widget.close();
             }
             
-            var text = self.getFilterText();
+            var text = self.getFilterText().toLowerCase();
             widget.optionList.find('li').each(function() {
                 var option = $(this).data('option');
-                if(option.name.indexOf(text) == 0) {
+                if(option.name.toLowerCase().indexOf(text) == 0) {
                     $(this).show();
                 } else {
                     $(this).hide();
                 }
             });
+            
+            self.setSelectedIndex(0);
         };
         
-        this.onWidgetKeyDown = function(e) {
+        this.onWidgetKeyPress = function(e) {
             switch(e.keyCode) {
+                // backspace
+                case 8: {
+                    widget.editor.editor.removeLeft();
+                    break;
+                }
+                // delete
+                case 46: {
+                    widget.editor.editor.removeRight();
+                    break;
+                }
                 // enter
                 case 13: {
                     var li = widget.optionList.find('li:visible').eq(self.getSelectedIndex());
                     self.chosen(li.data('option'));
-                    return false;
+                    break;
                 }
                 // escape
                 case 27: {
                     widget.close();
-                    return false;
+                    break;
+                }
+                // left
+                case 37: {
+                    widget.editor.editor.navigateLeft();
+                    break;
                 }
                 // up
                 case 38: {
                     self.setSelectedIndex(self.getSelectedIndex() - 1);
-                    return false;
+                    break;
+                }
+                // right
+                case 39: {
+                    widget.editor.editor.navigateRight();
+                    break;
                 }
                 // down
                 case 40: {
                     self.setSelectedIndex(self.getSelectedIndex() + 1);
-                    return false;
+                    break;
                 }
             }
             
-            return true;
+            var c = String.fromCharCode(e.charCode);
+            if(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
+                widget.editor.editor.insert(c);
+            }
+            
+            // If we've moved outside the range of the auto-complete text, close
+            // the widget
+            var currentPos = widget.editor.editor.getCursorPosition();
+            if(currentPos.row != startRow || currentPos.column < startColumn) {
+                widget.close();
+            }
+            
+            //console.log(e);
+            //console.log(c + ': ' + e.keyCode + '/' + e.charCode);
+            
+            return false;
         };
 
         
@@ -162,7 +216,7 @@ var AutoCompleteWidget = function(editor) {
         };
         
         this.getSelectedIndex = function() {
-            return widget.optionList.find('li:visible.selected').prevAll().length;
+            return widget.optionList.find('li.selected').prevAll(':visible').length;
         };
         
         this.getFilterText = function() {
@@ -188,14 +242,6 @@ var AutoCompleteWidget = function(editor) {
         
         this.init();
     }
-    
-    this.close = function() {
-        this.listener && this.listener.destroy();
-        this.listener = null;
-        
-        this.win.hide();
-        this.editor.editor.focus();
-    };
     
 }).call(AutoCompleteWidget.prototype);
 
