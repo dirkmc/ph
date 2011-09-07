@@ -60,7 +60,8 @@ var AutoCompleteWidget = function(editor) {
         var currentPos = this.editor.editor.getCursorPosition();
         if(!autoComplete ||
            autoComplete.row != currentPos.row ||
-           autoComplete.column != currentPos.column
+           autoComplete.column != currentPos.column ||
+           autoComplete.options.length == 0
         ) {
             this.close();
             return;

@@ -107,7 +107,7 @@ var ServerInterface = function(settings) {
             onSend: function() {
                 var delta = deltas[deltas.length - 1];
                 this.data.autoComplete = _self.settings.editor.autoComplete.checkForAutoComplete(delta);
-                this.data.compile = !this.data.autoComplete
+                //this.data.compile = !this.data.autoComplete
             },
             success: function(response) {
                 if(response.compile !== null && typeof response.compile != 'undefined') {

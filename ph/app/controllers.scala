@@ -12,12 +12,15 @@ object Application extends Controller {
   def root = "/Users/dirk/dev/projects/yabe"
   
   def index = {
+    // TODO: Retrieve project based on request parameter
+    ProjectManager.project = new PlayProject(Application.root)
     html.index(new File(root))
   }
 }
 
 object ProjectManager extends Controller {
-  val project = new PlayProject(Application.root)
+  //val project = new PlayProject(Application.root)
+  var project:PlayProject = null
   
   def load(filePath:String) = project.getContents(filePath)
   def loadHtml(filePath:String) = Html("<pre>" + load(filePath) + "</pre>")
@@ -26,11 +29,7 @@ object ProjectManager extends Controller {
     project.applyDeltas(filePath, deltas)
     
     var json = "";
-    if(compile) {
-      json += "\"compile\":" + compileJson(filePath)
-    }
     if(autoComplete) {
-      if(json.length > 0) json += ","
       val options = project.complete(filePath, cursorRow, cursorColumn)
       val optionsString = options.map(o => {
         "{" +
@@ -46,6 +45,10 @@ object ProjectManager extends Controller {
         "\"row\":" + cursorRow + "," +
         "\"column\":" + cursorColumn +
         "}"
+    }
+    if(compile) {
+      if(json.length > 0) json += ","
+      json += "\"compile\":" + compileJson(filePath)
     }
     
     if(json.length > 0) Json("{"+json+"}") else jsonOk
