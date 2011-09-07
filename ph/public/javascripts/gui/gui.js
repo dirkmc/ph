@@ -6,6 +6,7 @@ var ServerInterface = require("gui/server").ServerInterface;
 var RecentView = require('gui/views/recent').RecentView;
 var ProjectView = require('gui/views/project').ProjectView;
 var AutoCompleteWidget = require('gui/widgets/auto_complete').AutoCompleteWidget;
+var ErrorReporterWidget = require('gui/widgets/error_reporter').ErrorReporterWidget;
 var ScalaMode = require('ace/mode/scala').Mode;
 var CssMode = require('ace/mode/css').Mode;
 
@@ -40,6 +41,7 @@ function Editor(fileName, editorPane, editorTab) {
     this.editor = ace.edit(editorPane[0]);
     this.editor.setTheme("ace/theme/eclipse");
     this.autoComplete = new AutoCompleteWidget(this);
+    this.errorReporter = new ErrorReporterWidget(this);
     
     var doc = this.editor.getSession().getDocument();
     
@@ -48,6 +50,7 @@ function Editor(fileName, editorPane, editorTab) {
         newLine: doc.getNewLineCharacter(),
         onCompile: function(msgs) {
             _self.editor.getSession().setAnnotations(msgs);
+            _self.errorReporter.setErrors(msgs);
         },
         editor: this
     });

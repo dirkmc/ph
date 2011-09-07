@@ -5,7 +5,7 @@ var AutoCompleteWidget = function(editor) {
     this.listener = null;
     
     this.win = $('<div id="auto-complete-widget" class="widget" tabindex="0"></div>');
-    this.optionList = $('<ul class="recent-file-list"></ul>');
+    this.optionList = $('<ul></ul>');
     this.win.append(this.optionList);
     
     // When the widget loses focus, close it

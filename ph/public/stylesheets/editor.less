@@ -3,6 +3,11 @@
   .rounded-corners-bottom(@radius);
 }
 
+.rounded-corners-top-right (@radius: 5px) {
+  border-top-right-radius: @radius;
+  -webkit-border-top-right-radius: @radius;
+  -moz-border-radius-topright: @radius;
+}
 .rounded-corners-top (@radius: 5px) {
   border-top-left-radius: @radius;
   border-top-right-radius: @radius;
@@ -103,6 +108,37 @@ body {
     }
     li.selected {
       background-color: #eeeeee;
+    }
+  }
+}
+
+#error-reporter-widget {
+  display: none;
+  position: absolute;
+  left: 250px;
+  bottom: 10px;
+  height: 2em;
+  overflow: hidden;
+  z-index: 5;
+  background: #FFFFFF;
+  border: 1px solid #444444;
+  border-left: none;
+  border-bottom: none;
+  padding: 0.25em 0.5em 0 0;
+  .rounded-corners-top-right;
+
+  ul {
+    font-size: 0.9em;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    float: left;
+    
+    li {
+      font-weight: bold;
+      padding: 0.5em 0.25em;
+      display: block;
+      float: left;
     }
   }
 }
