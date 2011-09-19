@@ -64,11 +64,13 @@ function Editor(fileName, editorPane, editorTab, initialContent) {
     this.autoComplete = new AutoCompleteWidget(this);
     this.errorReporter = new ErrorReporterWidget(this);
     
+    var fileType = getFileType(fileName, initialContent);
     var doc = this.editor.getSession().getDocument();
     
     this.serverInterface = new ServerInterface({
         fileName: fileName,
         newLine: doc.getNewLineCharacter(),
+        compile: fileType.compile,
         onCompile: function(msgs) {
             _self.editor.getSession().setAnnotations(msgs);
             _self.errorReporter.setErrors(msgs);
@@ -76,12 +78,10 @@ function Editor(fileName, editorPane, editorTab, initialContent) {
         editor: this
     });
     
-    this.autoCompleteTimeout = null;
     doc.on("change", function(e) {
         _self.serverInterface.addDelta(e.data);
     });
     
-    var fileType = getFileType(fileName, initialContent);
     if(fileType) {
         this.editor.getSession().setMode(new fileType.mode());
         if(fileType.compile) {

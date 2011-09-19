@@ -100,14 +100,16 @@ var ServerInterface = function(settings) {
             data: {
                 filePath: this.settings.fileName,
                 deltas: serializeDeltas(this.settings.newLine, deltas),
-                compile: true,
+                compile: this.settings.compile,
                 cursorRow: cursorPos.row,
                 cursorColumn: cursorPos.column
             },
             onSend: function() {
+                if(!_self.settings.compile) {
+                    return;
+                }
                 var delta = deltas[deltas.length - 1];
                 this.data.autoComplete = _self.settings.editor.autoComplete.checkForAutoComplete(delta);
-                //this.data.compile = !this.data.autoComplete
             },
             success: function(response) {
                 if(response.compile !== null && typeof response.compile != 'undefined') {
