@@ -13,8 +13,8 @@ var ProjectView = function(gui) {
     });
     
     this.win.find('.file').click(function() {
-        var fileName = $(this).find('input').val();
-        _self.gui.loadEditor(fileName);
+        var filePath = $(this).find('input').val();
+        _self.gui.loadSourceFile(filePath);
     });
 };
 

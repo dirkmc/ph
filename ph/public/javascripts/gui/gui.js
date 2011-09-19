@@ -35,10 +35,10 @@ var fileTypes = {
     }
 };
     
-function getFileType(fileName, content) {
+function getFileType(filePath, content) {
     // First try to match against file name
     for(var lang in fileTypes) {
-        if(fileName.match(fileTypes[lang].nameRegexp)) {
+        if(filePath.match(fileTypes[lang].nameRegexp)) {
             return fileTypes[lang];
         }
     }
@@ -53,22 +53,22 @@ function getFileType(fileName, content) {
     return null;
 }
 
-function Editor(fileName, editorPane, editorTab, initialContent) {
+function SourceFile(filePath, editorPane, editorTab, initialContent) {
     var _self = this;
     this.editorPane = editorPane;
     this.editorTab = editorTab;
-    this.fileName = fileName;
+    this.filePath = filePath;
     
     this.editor = ace.edit(editorPane[0]);
     this.editor.setTheme("ace/theme/eclipse");
     this.autoComplete = new AutoCompleteWidget(this);
     this.errorReporter = new ErrorReporterWidget(this);
     
-    var fileType = getFileType(fileName, initialContent);
+    var fileType = getFileType(filePath, initialContent);
     var doc = this.editor.getSession().getDocument();
     
     this.serverInterface = new ServerInterface({
-        filePath: fileName,
+        filePath: filePath,
         newLine: doc.getNewLineCharacter(),
         compile: fileType.compile,
         getCursorPosition: function() {
@@ -105,12 +105,12 @@ function Editor(fileName, editorPane, editorTab, initialContent) {
     };
 }
 
-function EditorQueue() {
+function SourceFileQueue() {
     this.queue = [];
     
-    this.remove = function(editor) {
+    this.remove = function(sourceFile) {
         for(var i = 0; i < this.queue.length; i++) {
-            if(editor == this.queue[i]) {
+            if(sourceFile == this.queue[i]) {
                 this.queue.splice(i, 1);
                 return;
             }
@@ -121,9 +121,9 @@ function EditorQueue() {
         return this.queue[this.queue.length - 1];
     }
     
-    this.push = function(editor) {
-        this.remove(editor);
-        this.queue.push(editor);
+    this.push = function(sourceFile) {
+        this.remove(sourceFile);
+        this.queue.push(sourceFile);
     }
 }
 
@@ -147,8 +147,8 @@ function LeftPane() {
 }
 
 var Gui = function() {
-    this.editors = {};
-    this.editorQueue = new EditorQueue();
+    this.sourceFiles = {};
+    this.sourceFileQueue = new SourceFileQueue();
     
     this.leftPane = new LeftPane();
     this.leftPane.add("project", new ProjectView(this));
@@ -156,36 +156,36 @@ var Gui = function() {
     this.leftPane.show("project");
     
     this.initCommands();
-    //this.loadEditor('/Users/dirk/dev/projects/yabe/app/controllers.scala');
+    //this.loadSourceFile('/Users/dirk/dev/projects/yabe/app/controllers.scala');
 };
 
 (function(){
 
-    this.loadEditor = function(fileName) {
-        var editor = this.editors[fileName];
+    this.loadSourceFile = function(filePath) {
+        var sourceFile = this.sourceFiles[filePath];
         
-        // Still loading the editor
-        if(editor === false) {
+        // Still loading the sourceFile
+        if(sourceFile === false) {
             return;
         }
         
-        if(editor != null) {
-            this.showEditor(editor);
+        if(sourceFile != null) {
+            this.showSourceFile(sourceFile);
         } else {
-            // Editor has not yet been created, so create it
-            this.editors[fileName] = false;
+            // SourceFile has not yet been created, so create it
+            this.sourceFiles[filePath] = false;
             var _self = this;
             $.ajax({
                 url: '/file/load',
-                data: { filePath: fileName },
+                data: { filePath: filePath },
                 success: function(content) {
-                    _self.openEditor(fileName, content);
+                    _self.openSourceFile(filePath, content);
                 }
             })
         }
     };
     
-    this.openEditor = function(fileName, content) {
+    this.openSourceFile = function(filePath, content) {
         var editorContainer = $('#editor-container');
         var tabsContainer = $('#tab-container');
         
@@ -193,7 +193,7 @@ var Gui = function() {
         editorPane.text(content);
         editorContainer.append(editorPane);
         
-        var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
+        var shortName = filePath.substring(filePath.lastIndexOf('/') + 1);
         var tabHtml = '<div class="editor-tab">';
         tabHtml += '<span class="editor-name">';
         tabHtml += shortName;
@@ -204,41 +204,41 @@ var Gui = function() {
         tabsContainer.append(editorTab);
         var that = this;
         editorTab.find('.editor-name').click(function() {
-            that.showEditor($(this).parent().data('editor'));
+            that.showSourceFile($(this).parent().data('sourceFile'));
         });
         editorTab.find('.editor-close').click(function() {
-            that.closeEditor($(this).parent().data('editor'));
+            that.closeSourceFile($(this).parent().data('sourceFile'));
         });
         
-        var editor = new Editor(fileName, editorPane, editorTab, content);
-        editorTab.data('editor', editor);
-        this.editors[fileName] = editor;
-        this.showEditor(editor);
+        var sourceFile = new SourceFile(filePath, editorPane, editorTab, content);
+        editorTab.data('sourceFile', sourceFile);
+        this.sourceFiles[filePath] = sourceFile;
+        this.showSourceFile(sourceFile);
     };
     
-    this.showEditor = function(editor) {
-        if(editor == null) {
+    this.showSourceFile = function(sourceFile) {
+        if(sourceFile == null) {
             document.title = '';
             return;
         }
-        this.editorQueue.push(editor);
+        this.sourceFileQueue.push(sourceFile);
         var tabsContainer = $('#tab-container');
         tabsContainer.children().removeClass('selected');
-        editor.editorTab.addClass('selected');
+        sourceFile.editorTab.addClass('selected');
         
         var editorContainer = $('#editor-container');
         editorContainer.children().hide();
-        editor.editorPane.show();
+        sourceFile.editorPane.show();
         
-        document.title = editor.fileName;
+        document.title = sourceFile.filePath;
     };
     
-    this.closeEditor = function(editor) {
-        editor.editorPane.remove();
-        editor.editorTab.remove();
-        this.editors[editor.fileName] = null;
-        this.editorQueue.remove(editor);
-        this.showEditor(this.editorQueue.peek());
+    this.closeSourceFile = function(sourceFile) {
+        sourceFile.editorPane.remove();
+        sourceFile.editorTab.remove();
+        this.sourceFiles[sourceFile.filePath] = null;
+        this.sourceFileQueue.remove(sourceFile);
+        this.showSourceFile(this.sourceFileQueue.peek());
     };
     
     this.getProjectRoot = function() {
@@ -255,8 +255,8 @@ var Gui = function() {
                 sender: "editor"
             },
             exec: function(env, args, request) {
-                var currentEditor = _self.editorQueue.peek();
-                currentEditor && currentEditor.saveFile();
+                var currentSourceFile = _self.sourceFileQueue.peek();
+                currentSourceFile && currentSourceFile.saveFile();
             }
         });
         
