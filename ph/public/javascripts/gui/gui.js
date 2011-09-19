@@ -9,22 +9,43 @@ var AutoCompleteWidget = require('gui/widgets/auto_complete').AutoCompleteWidget
 var ErrorReporterWidget = require('gui/widgets/error_reporter').ErrorReporterWidget;
 var ScalaMode = require('ace/mode/scala').Mode;
 var CssMode = require('ace/mode/css').Mode;
+var HtmlMode = require('ace/mode/html').Mode;
+var XmlMode = require('ace/mode/xml').Mode;
 
 var fileTypes = {
     scala: {
-        regexp: /\.scala(\.html)?$/i,
+        nameRegexp: /\.scala$/i,
         mode: ScalaMode,
         compile: true
     },
     css: {
-        regexp: /\.(css|less)$/i,
+        nameRegexp: /\.(css|less)$/i,
         mode: CssMode
+    },
+    html: {
+        nameRegexp: /\.(html)$/i,
+        mode: HtmlMode
+    },
+    xml: {
+        nameRegexp: /\.(xml)$/i,
+        mode: XmlMode,
+        match: function(content) {
+            return content.match(/^\s*<\?xml.*\?>/);
+        }
     }
 };
     
-function getFileType(fileName) {
+function getFileType(fileName, content) {
+    // First try to match against file name
     for(var lang in fileTypes) {
-        if(fileName.match(fileTypes[lang].regexp)) {
+        if(fileName.match(fileTypes[lang].nameRegexp)) {
+            return fileTypes[lang];
+        }
+    }
+    
+    // Then try the match function for each file type
+    for(var lang in fileTypes) {
+        if(fileTypes[lang].match && fileTypes[lang].match(content)) {
             return fileTypes[lang];
         }
     }
@@ -32,7 +53,7 @@ function getFileType(fileName) {
     return null;
 }
 
-function Editor(fileName, editorPane, editorTab) {
+function Editor(fileName, editorPane, editorTab, initialContent) {
     var _self = this;
     this.editorPane = editorPane;
     this.editorTab = editorTab;
@@ -57,15 +78,14 @@ function Editor(fileName, editorPane, editorTab) {
     
     this.autoCompleteTimeout = null;
     doc.on("change", function(e) {
-        //_self.autoComplete.close();
         _self.serverInterface.addDelta(e.data);
     });
     
-    var fileType = getFileType(fileName);
+    var fileType = getFileType(fileName, initialContent);
     if(fileType) {
         this.editor.getSession().setMode(new fileType.mode());
         if(fileType.compile) {
-            //this.serverInterface.compile();
+            this.serverInterface.compile();
         }
     }
     
@@ -125,7 +145,7 @@ var Gui = function() {
     this.leftPane.show("project");
     
     this.initCommands();
-    this.loadEditor('/Users/dirk/dev/projects/yabe/app/controllers.scala');
+    //this.loadEditor('/Users/dirk/dev/projects/yabe/app/controllers.scala');
 };
 
 (function(){
@@ -158,7 +178,8 @@ var Gui = function() {
         var editorContainer = $('#editor-container');
         var tabsContainer = $('#tab-container');
         
-        var editorPane = $('<pre class="editor-pane">' + content + '</pre>');
+        var editorPane = $('<pre class="editor-pane"></pre>');
+        editorPane.text(content);
         editorContainer.append(editorPane);
         
         var shortName = fileName.substring(fileName.lastIndexOf('/') + 1);
@@ -178,7 +199,7 @@ var Gui = function() {
             that.closeEditor($(this).parent().data('editor'));
         });
         
-        var editor = new Editor(fileName, editorPane, editorTab);
+        var editor = new Editor(fileName, editorPane, editorTab, content);
         editorTab.data('editor', editor);
         this.editors[fileName] = editor;
         this.showEditor(editor);
