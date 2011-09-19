@@ -13,6 +13,9 @@ POST    /file/save/content.json                 ProjectManager.saveContent
 POST    /file/deltas.json                       ProjectManager.deltas
 GET     /project/recent.json                    ProjectManager.recent
 
+GET     /github/login                           GitHub.requestAuth
+GET     /github/auth                            GitHub.auth
+GET     /github/show                            GitHub.show
 
 # Ignore favicon requests
 GET     /favicon.ico                            404
