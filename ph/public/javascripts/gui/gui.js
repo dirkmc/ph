@@ -68,15 +68,21 @@ function Editor(fileName, editorPane, editorTab, initialContent) {
     var doc = this.editor.getSession().getDocument();
     
     this.serverInterface = new ServerInterface({
-        fileName: fileName,
+        filePath: fileName,
         newLine: doc.getNewLineCharacter(),
         compile: fileType.compile,
-        onCompile: function(msgs) {
-            _self.editor.getSession().setAnnotations(msgs);
-            _self.errorReporter.setErrors(msgs);
-        },
         editor: this
     });
+    
+    this.serverInterface.on('compile', function(e) {
+        _self.editor.getSession().setAnnotations(e.messages);
+        _self.errorReporter.setErrors(e.messages);
+    });
+    
+    this.serverInterface.on('complete', function(e) {
+        _self.autoComplete.show(e);
+    });
+    
     
     doc.on("change", function(e) {
         _self.serverInterface.addDelta(e.data);

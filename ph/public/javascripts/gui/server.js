@@ -1,17 +1,22 @@
 /**
+ * Events:
+ * - compile (when a file has been compiled)
+ * - complete (when an auto-complete request returns)
+ * 
+ * settings parameter:
  * {
  *   - newLine
  *     The newline character used in the document
  *     
- *   - fileName
- *     The file name
- *     
- *   - onCompile
- *     Function called when file has been compiled. Passes errors/warning as a
- *     parameter
+ *   - filePath
+ *     The path to the file
  * }
  */
 define(function(require, exports, module) {
+
+var oop = require("pilot/oop");
+var EventEmitter = require("pilot/event_emitter").EventEmitter;
+
 
 var ServerInterface = function(settings) {
     this.settings = settings;
@@ -22,6 +27,8 @@ var ServerInterface = function(settings) {
 };
 
 (function(){
+    oop.implement(this, EventEmitter);
+
     
     this.enqueue = function(item) {
         this.sendQueue.push(item);
@@ -98,7 +105,7 @@ var ServerInterface = function(settings) {
             type: 'POST',
             dataType: 'json',
             data: {
-                filePath: this.settings.fileName,
+                filePath: this.settings.filePath,
                 deltas: serializeDeltas(this.settings.newLine, deltas),
                 compile: this.settings.compile,
                 cursorRow: cursorPos.row,
@@ -109,14 +116,19 @@ var ServerInterface = function(settings) {
                     return;
                 }
                 var delta = deltas[deltas.length - 1];
+                // TODO: Do this indirectly, so there isn't a dependency on the
+                // Auto Complete widget
                 this.data.autoComplete = _self.settings.editor.autoComplete.checkForAutoComplete(delta);
             },
             success: function(response) {
                 if(response.compile !== null && typeof response.compile != 'undefined') {
-                    _self.settings.onCompile(getCompileMessages(response))
+                    _self._dispatchEvent('compile', {
+                        filePath: _self.settings.filePath,
+                        messages: getCompileMessages(response)
+                    });
                 }
                 if(response.autoComplete !== null && typeof response.autoComplete != 'undefined') {
-                    _self.settings.editor.autoComplete.show(response.autoComplete);
+                    _self._dispatchEvent('complete', response.autoComplete);
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -148,10 +160,13 @@ var ServerInterface = function(settings) {
             type: 'GET',
             dataType: 'json',
             data: {
-                filePath: this.settings.fileName
+                filePath: this.settings.filePath
             },
             success: function(response) {
-                _self.settings.onCompile(getCompileMessages(response))
+                _self._dispatchEvent('compile', {
+                    filePath: _self.settings.filePath,
+                    messages: getCompileMessages(response)
+                });
             }
         });
     };
@@ -172,7 +187,7 @@ var ServerInterface = function(settings) {
             url: '/file/save.json',
             type: 'POST',
             data: {
-                filePath: _self.settings.fileName,
+                filePath: _self.settings.filePath,
                 checkSum: checkSum
             },
             // If saving deltas fails (eg because of a bad checksum) try
@@ -205,7 +220,7 @@ var ServerInterface = function(settings) {
             url: '/file/save/content.json',
             type: 'POST',
             data: {
-                filePath: this.settings.fileName,
+                filePath: this.settings.filePath,
                 content: value
             }
         }
