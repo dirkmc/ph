@@ -7,51 +7,7 @@ var RecentView = require('gui/views/recent').RecentView;
 var ProjectView = require('gui/views/project').ProjectView;
 var AutoCompleteWidget = require('gui/widgets/auto_complete').AutoCompleteWidget;
 var ErrorReporterWidget = require('gui/widgets/error_reporter').ErrorReporterWidget;
-var ScalaMode = require('ace/mode/scala').Mode;
-var CssMode = require('ace/mode/css').Mode;
-var HtmlMode = require('ace/mode/html').Mode;
-var XmlMode = require('ace/mode/xml').Mode;
-
-var fileTypes = {
-    scala: {
-        nameRegexp: /\.scala$/i,
-        mode: ScalaMode,
-        compile: true
-    },
-    css: {
-        nameRegexp: /\.(css|less)$/i,
-        mode: CssMode
-    },
-    html: {
-        nameRegexp: /\.(html)$/i,
-        mode: HtmlMode
-    },
-    xml: {
-        nameRegexp: /\.(xml)$/i,
-        mode: XmlMode,
-        match: function(content) {
-            return content.match(/^\s*<\?xml.*\?>/);
-        }
-    }
-};
-    
-function getFileType(filePath, content) {
-    // First try to match against file name
-    for(var lang in fileTypes) {
-        if(filePath.match(fileTypes[lang].nameRegexp)) {
-            return fileTypes[lang];
-        }
-    }
-    
-    // Then try the match function for each file type
-    for(var lang in fileTypes) {
-        if(fileTypes[lang].match && fileTypes[lang].match(content)) {
-            return fileTypes[lang];
-        }
-    }
-    
-    return null;
-}
+var FileType = require('gui/file_type').FileType;
 
 function SourceFile(filePath, editorPane, editorTab, initialContent) {
     var _self = this;
@@ -64,13 +20,13 @@ function SourceFile(filePath, editorPane, editorTab, initialContent) {
     this.autoComplete = new AutoCompleteWidget(this);
     this.errorReporter = new ErrorReporterWidget(this);
     
-    var fileType = getFileType(filePath, initialContent);
+    var fileType = new FileType(filePath, initialContent).getSettings();
     var doc = this.editor.getSession().getDocument();
     
     this.serverInterface = new ServerInterface({
         filePath: filePath,
         newLine: doc.getNewLineCharacter(),
-        compile: fileType.compile,
+        compile: fileType != null && fileType.compile,
         getCursorPosition: function() {
             return _self.editor.getCursorPosition();
         },
