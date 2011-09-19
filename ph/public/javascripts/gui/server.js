@@ -2,15 +2,6 @@
  * Events:
  * - compile (when a file has been compiled)
  * - complete (when an auto-complete request returns)
- * 
- * settings parameter:
- * {
- *   - newLine
- *     The newline character used in the document
- *     
- *   - filePath
- *     The path to the file
- * }
  */
 define(function(require, exports, module) {
 
@@ -98,7 +89,7 @@ var ServerInterface = function(settings) {
             return;
         }
         
-        var cursorPos = this.settings.editor.editor.getCursorPosition();
+        var cursorPos = this.settings.getCursorPosition();
         var _self = this;
         this.enqueue({
             url: '/file/deltas.json',
@@ -116,9 +107,7 @@ var ServerInterface = function(settings) {
                     return;
                 }
                 var delta = deltas[deltas.length - 1];
-                // TODO: Do this indirectly, so there isn't a dependency on the
-                // Auto Complete widget
-                this.data.autoComplete = _self.settings.editor.autoComplete.checkForAutoComplete(delta);
+                this.data.autoComplete = _self.settings.shouldAutoComplete(delta);
             },
             success: function(response) {
                 if(response.compile !== null && typeof response.compile != 'undefined') {

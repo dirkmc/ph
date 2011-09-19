@@ -71,7 +71,12 @@ function Editor(fileName, editorPane, editorTab, initialContent) {
         filePath: fileName,
         newLine: doc.getNewLineCharacter(),
         compile: fileType.compile,
-        editor: this
+        getCursorPosition: function() {
+            return _self.editor.getCursorPosition();
+        },
+        shouldAutoComplete: function(delta) {
+            return _self.autoComplete.checkForAutoComplete(delta);
+        }
     });
     
     this.serverInterface.on('compile', function(e) {
