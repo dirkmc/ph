@@ -1,28 +1,9 @@
-@(
-    root:java.io.File
-)
-
-@import views.Application.html.fileList
-
 <html>
 <body>
 <head>
-  <link href="/public/stylesheets/editor.less" rel="stylesheet" type="text/css" charset="utf-8"></link>
 </head>
-    
-<div id="left-pane">
-  <div id="project-view" class="view">
-    @fileList(root)
-  </div>
-</div>
 
-<div id="editors">
-  <div id="tab-container"></div>
-  <div id="editor-container"></div>
-</div>
-
-
-<script data-main="/public/javascripts/boot.js" src="/public/javascripts/require-jquery.js" type="text/javascript" charset="utf-8"></script>
+<a href='@action(controllers.ProjectManager.openProject("/Users/dirk/dev/projects/yabe"))'>YABE</a>
 
 </body>
 </html>

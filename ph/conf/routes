@@ -5,6 +5,7 @@
 GET     /                                       Application.index
 GET     /test                                   Application.test
 
+GET     /project                                ProjectManager.openProject
 GET     /file/compile.json                      ProjectManager.compile
 GET     /file/load                              ProjectManager.load
 GET     /file/load.html                         ProjectManager.loadHtml

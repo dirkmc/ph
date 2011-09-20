@@ -6,21 +6,18 @@ import java.io.File
 import scala.collection.JavaConversions._
 import project.PlayProject
 
-object Application extends Controller {
-  import views.Application._
-  
-  def root = "/Users/dirk/dev/projects/yabe"
-  
-  def index = {
-    // TODO: Retrieve project based on request parameter
-    ProjectManager.project = new PlayProject(Application.root)
-    html.index(new File(root))
-  }
-}
-
 object ProjectManager extends Controller {
-  //val project = new PlayProject(Application.root)
+  import views.ProjectManager._
+  
+  // TODO: Put this in session/cache
   var project:PlayProject = null
+  
+  // def root = "/Users/dirk/dev/projects/yabe"
+  def openProject(root: String) = {
+    project = new PlayProject(root)
+    html.project(new File(root))
+  }
+  
   
   def load(filePath:String) = project.getContents(filePath)
   def loadHtml(filePath:String) = Html("<pre>" + load(filePath) + "</pre>")
