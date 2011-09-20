@@ -3,3 +3,13 @@
 require:
     - play
     - play -> scala-head
+    - com.codahale -> jerkson_2.8.1 0.4.2-SNAPSHOT:
+        exclude:
+            - org.scala-lang -> scala-library
+
+repositories:
+    - codahale:
+        type: iBiblio
+        root: "http://repo.codahale.com/"
+        contains:
+            - com.codahale.*

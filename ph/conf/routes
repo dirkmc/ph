@@ -15,7 +15,8 @@ GET     /project/recent.json                    ProjectManager.recent
 
 GET     /github/login                           GitHub.requestAuth
 GET     /github/auth                            GitHub.auth
-GET     /github/show                            GitHub.show
+GET     /github/user                            GitHub.user
+GET     /github/repos                           GitHub.repos
 
 # Ignore favicon requests
 GET     /favicon.ico                            404

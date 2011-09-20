@@ -5,7 +5,10 @@ import play.mvc.Controller
 import play.libs.WS
 import scala.collection.JavaConversions._
 
+case class Repo(name: String, url: String)
+
 object GitHub extends Controller {
+  import views.GitHub._
   
   def requestAuth = {
     Redirect("https://github.com/login/oauth/authorize?client_id=61049ecd98284a1bf12b&scope=repo")
@@ -22,18 +25,25 @@ object GitHub extends Controller {
       "error: " + response.getString()
       // TODO: error
     } else {
-      Action(show(accessToken))
+      Action(repos(accessToken))
     }
   }
   
-  def show(accessToken: String) = {
-    //val response = WS.url("https://api.github.com/user").
-    //  setParameter("access_token", accessToken).get()
-    val response = WS.url("https://api.github.com/repos/dirkmc/ace/commits").
+  def user(accessToken: String) = {
+    val response = WS.url("https://api.github.com/user").
       setParameter("access_token", accessToken).get()
     
     "Response: " + response.getString()
   }
+  
+  def repos(accessToken: String) = {
+    val response = WS.url("https://api.github.com/user/repos").
+      setParameter("access_token", accessToken).get()
     
+    import com.codahale.jerkson.Json._
+    val repos = parse[List[Repo]](response.getString())
+    html.repos(repos)
+  }
+  
 
 }
