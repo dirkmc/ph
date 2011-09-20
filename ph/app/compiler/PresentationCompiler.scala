@@ -80,7 +80,6 @@ class PresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String]) {
   def compile(src: JFile): Seq[Problem] = {
     val file = toSourceFile(src)
     val typedResult = new Response[compiler.Tree]
-    
     reporter.reset
     compiler.askType(file, false, typedResult)
     typedResult.get
@@ -124,7 +123,21 @@ class PresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String]) {
           println(option.sym.infosString)
           println("=====================")
           */
-          CompleteOption(option.sym.kindString, option.sym.decodedName.toString, option.sym.fullName, option.sym.infoString(option.tpe))
+          
+          // TODO: How do I do this using pattern matching?
+          var replaceText = option.sym.decodedName.toString
+          var cursorPos = replaceText.length
+          if(option.tpe.isInstanceOf[compiler.MethodType]) {
+            val methodType = option.tpe.asInstanceOf[compiler.MethodType]
+            if(methodType.params.nonEmpty) {
+              replaceText += "()"
+              cursorPos = replaceText.length - 1
+            }
+          }
+          
+          CompleteOption(option.sym.kindString, option.sym.decodedName.toString, option.sym.fullName,
+              replaceText, cursorPos, option.sym.infoString(option.tpe))
+          
         }).sortWith((o1, o2) => (o1.name < o2.name))
       case _ => List[CompleteOption]()
     }
@@ -176,5 +189,5 @@ object PresentationCompiler {
   def toSourceFile(name: String): SourceFile = toSourceFile(new JFile(name))
 
   case class Problem(pos: Position, msg: String, severity: Int)
-  case class CompleteOption(kind: String, name: String, fullName: String, symType: String)
+  case class CompleteOption(kind: String, name: String, fullName: String, replaceText: String, cursorPos: Int, symType: String)
 }

@@ -260,13 +260,13 @@ var AutoCompleteWidget = function(editor) {
             if(!option) {
                 return;
             }
-            var text = option.name + "()";
+            var text = option.replaceText;
             var filterText = this.getFilterText();
             var endColumn = startColumn + (filterText ? filterText.length : 0);
             widget.close();
             doc.removeInLine(startRow, startColumn, endColumn);
             doc.insertInLine({row: startRow, column: startColumn}, text);
-            widget.editor.editor.moveCursorTo(startRow, startColumn + text.length - 1);
+            widget.editor.editor.moveCursorTo(startRow, startColumn + option.cursorPos);
         };
         
         this.init();

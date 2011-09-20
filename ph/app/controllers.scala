@@ -36,6 +36,8 @@ object ProjectManager extends Controller {
           "\"kind\":\"" + o.kind + "\"," +
           "\"name\":\"" + o.name + "\"," +
           "\"fullName\":\"" + o.fullName + "\"," +
+          "\"replaceText\":\"" + o.replaceText + "\"," +
+          "\"cursorPos\":" + o.cursorPos + "," +
           "\"symType\":\"" + o.symType + "\"" +
         "}"
       }).mkString("[", ",", "]")
