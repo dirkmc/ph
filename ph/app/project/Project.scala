@@ -4,6 +4,7 @@ import play.libs.IO
 import java.io.File
 import scala.collection.JavaConversions._
 import compiler.PresentationCompiler
+import compiler.ScalaPresentationCompiler
 import io.FIO
 
 
@@ -31,7 +32,8 @@ class Project(projectPath: String) {
       libJars ++ jars
     }
     
-    new PresentationCompiler(sourceFiles, allJars)
+    // TODO: Switch based on type of project (java/scala)
+    new ScalaPresentationCompiler(sourceFiles, allJars)
   }
   
   

@@ -12,7 +12,6 @@ object ProjectManager extends Controller {
   // TODO: Put this in session/cache
   var project:PlayProject = null
   
-  // def root = "/Users/dirk/dev/projects/yabe"
   def openProject(root: String) = {
     project = new PlayProject(root)
     html.project(new File(root))
