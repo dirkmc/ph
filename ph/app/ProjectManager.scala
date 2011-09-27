@@ -12,7 +12,6 @@ object ProjectManager extends Controller {
   
   // TODO: Do this in session/cache?
   // TODO: Need to add an expiry mechanism for projects
-  //var project:PlayProject = null
   val openProjects = scala.collection.mutable.HashMap[String, PlayProject]()
   def onProject(project: String, op: (PlayProject) => Result ): Result = {
     openProjects.get(project) match {
@@ -70,14 +69,14 @@ object ProjectManager extends Controller {
     onProject(project, { proj =>
       if(proj.saveFile(filePath, checkSum)) {
         jsonOk
-      }
-      else {
+      } else {
         jsonError("""{"ok":false,"error":"checksum"}""")
       }
     })
   }
   
   def saveContent(project: String, filePath:String, content:String) = {
+    // Sanity check
     if(content == null) {
       throw new UnexpectedException("content parameter is null")
     }

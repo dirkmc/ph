@@ -41,8 +41,9 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
     
     // TODO: Figure out how to get this system-independently
     val classPath = {
+      val srcDirs = srcs.map(_.srcDir.getAbsolutePath).distinct
       val rtJar = "/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/classes.jar"
-      Seq(rtJar) ++ jars.map(_.getAbsolutePath)
+      srcDirs ++ jars.map(_.getAbsolutePath) ++ Seq(rtJar)
     }
     val nameEnvironment = new FileSystem(classPath.toArray, Array[String](), "UTF-8");
     
@@ -65,7 +66,7 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
   
   
   override def compile(src: SourceFile): Seq[Problem] = {
-    println("compiling: " + src.src.getPath)
+    println("compiling: " + src.srcDir + ": " + src.src.getPath)
     reporter.reset
     compiler.compile(Array(new CompilationUnit(src)))
     reporter.problems
@@ -78,7 +79,8 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
   class CompilationUnit(file: SourceFile) extends ICompilationUnit {
     val filePath = file.src.getAbsolutePath
     val rootPath = file.srcDir.getAbsolutePath
-    val pClazzName = filePath.replace(rootPath, "").replace(".java", "").replace('/', '.')
+    val pClazzName = filePath.replace(rootPath, "").
+      replaceAll("\\.java$", "").replaceAll("^/", "").replace('/', '.')
     
     val typeName = {
       val dot = pClazzName.lastIndexOf('.');
@@ -90,7 +92,7 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
     }
     
     val packageName = pClazzName.split("\\.").dropRight(1).map(_.toCharArray).toArray
-
+    
     override def getFileName = filePath.toCharArray
 
     override def getContents = {
@@ -110,12 +112,20 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
     val problems = scala.collection.mutable.ListBuffer[Problem]()
 
     override def acceptResult(result: CompilationResult) {
-      //println("accept result" + result)
-      result.getErrors.foreach(problem => {
-        val pos = Position(new String(problem.getOriginatingFileName), problem.getSourceLineNumber, 0)
-        val severity = if(problem.isError) 2 else if(problem.isWarning) 1 else 0
-        problems += Problem(pos, problem.getMessage, severity)
-      })
+      if(result.hasErrors) {
+        result.getErrors.foreach(problem => {
+          // TODO: This is what they do in the play equivalent of this class:
+          val message = if(problem.getID() == IProblem.CannotImportPackage) {
+            problem.getArguments()(0) + " cannot be resolved";
+          } else {
+            problem.getMessage
+          }
+        
+          val pos = Position(new String(problem.getOriginatingFileName), problem.getSourceLineNumber, 0)
+          val severity = if(problem.isError) 2 else if(problem.isWarning) 1 else 0
+          problems += Problem(pos, message, severity)
+        })
+      }
     }
     
     def reset = problems.clear
