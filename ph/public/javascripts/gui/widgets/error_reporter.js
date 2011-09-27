@@ -4,7 +4,7 @@ var ErrorReporterWidget = function(editor) {
     this.editor = editor;
     this.rowErrorMap = {};
     
-    this.win = $('<div id="error-reporter-widget" class="widget"></div>');
+    this.win = $('<div class="error-reporter-widget" class="widget"></div>');
     this.errorList = $('<ul></ul>');
     this.win.append(this.errorList);
     

@@ -185,6 +185,7 @@ var Gui = function(project) {
         
         var editorContainer = $('#editor-container');
         editorContainer.children().hide();
+        $('.error-reporter-widget').hide();
         sourceFile.editorPane.show();
         
         document.title = sourceFile.filePath;
