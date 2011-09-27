@@ -39,9 +39,9 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
     val policy = DefaultErrorHandlingPolicies.exitAfterAllProblems()
     val problemFactory = new DefaultProblemFactory(java.util.Locale.ENGLISH)
     
-    // TODO: Figure out how to get this system-independently
     val classPath = {
       val srcDirs = srcs.map(_.srcDir.getAbsolutePath).distinct
+      // TODO: Figure out how to get this system-independently
       val rtJar = "/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/classes.jar"
       srcDirs ++ jars.map(_.getAbsolutePath) ++ Seq(rtJar)
     }
@@ -66,7 +66,6 @@ class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
   
   
   override def compile(src: SourceFile): Seq[Problem] = {
-    println("compiling: " + src.srcDir + ": " + src.src.getPath)
     reporter.reset
     compiler.compile(Array(new CompilationUnit(src)))
     reporter.problems
