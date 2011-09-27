@@ -3,18 +3,18 @@ package project
 import play.libs.IO
 import java.io.File
 import scala.collection.JavaConversions._
-import compiler.PresentationCompiler
-import compiler.ScalaPresentationCompiler
+import compiler._
 import io.FIO
+import PresentationCompiler.SourceFile
 
 
-class Project(projectPath: String) {
+class Project(projectPath: String, projectType: String) {
   def cacheDirName = ".phcache"
   val cacheDir = new File(projectPath, cacheDirName)
   
-  def srcDirs = Seq[String]()
-  def libDirs = Seq[String]()
-  def jars = Seq[String]()
+  def srcDirs = Seq[File]()
+  def libDirs = Seq[File]()
+  def jars = Seq[File]()
   
   val compiler = {
     if(cacheDir.exists) cacheDir.delete
@@ -23,19 +23,40 @@ class Project(projectPath: String) {
     val root = new File(projectPath)
     copy(root, cacheDir)
     
-    val sourceFiles = srcDirs.map(srcDir => FIO.scanCompilableFiles(new File(srcDir))).flatten.toSeq
-    
     val allJars = {
-      val libJars = libDirs.map(libDir => new File(libDir).listFiles(new java.io.FilenameFilter {
-      override def accept(dir: File, name: String) = name.endsWith(".jar")
-      })).flatten.map(_.getAbsolutePath)
+      val libJars = libDirs.map(libDir => libDir.listFiles(new java.io.FilenameFilter {
+        override def accept(dir: File, name: String) = name.endsWith(".jar")
+      })).flatten
       libJars ++ jars
     }
     
-    // TODO: Switch based on type of project (java/scala)
-    new ScalaPresentationCompiler(sourceFiles, allJars)
+    
+    projectType match {
+      case "java" => new JavaPresentationCompiler(sourceFiles, allJars)
+      case _ => new ScalaPresentationCompiler(sourceFiles, allJars)
+    }
   }
   
+  // Map of original java.io.File => its representation as a PresentationCompiler.SourceFile
+  lazy val sourceFileMap = new scala.collection.mutable.HashMap[File, SourceFile]
+  def sourceFiles = {
+    sourceFileMap.clear
+    /*
+    srcDirs.map(srcDir => FIO.scanCompilableFiles(srcDir)).flatten.map(src => {
+      val sourceFile = new PresentationCompiler.SourceFile(srcDir, src)
+      sourceFileMap += (src -> sourceFile)
+      sourceFile
+    }).toSeq
+    */
+    srcDirs.map(srcDir => { 
+      FIO.scanCompilableFiles(srcDir).map(src => {
+        val sourceFile = new PresentationCompiler.SourceFile(srcDir, src)
+        sourceFileMap += (src -> sourceFile)
+        sourceFile
+      })
+    }).flatten.toSeq
+  }
+
   
   def copy(fromDir:File, toDir:File) {
     import play.libs.IO
@@ -107,17 +128,16 @@ class Project(projectPath: String) {
   
   def update() {
     beforeUpdate
-    val sourceFiles = srcDirs.map(srcDir => FIO.scanCompilableFiles(new File(srcDir))).flatten
     compiler.loadSources(sourceFiles)
   }
   
   def compile(filePath: String): Seq[PresentationCompiler.Problem] = {
     update()
-    compiler.compile(getFile(filePath))
+    sourceFileMap.get(getFile(filePath)).map(compiler.compile).getOrElse(Seq())
   }
   
   def complete(filePath: String, line: Int, column: Int): Seq[PresentationCompiler.CompleteOption] = {
     update()
-    compiler.complete(getFile(filePath), line, column)
+    sourceFileMap.get(getFile(filePath)).map(compiler.complete(_, line, column)).getOrElse(Seq())
   }
 }

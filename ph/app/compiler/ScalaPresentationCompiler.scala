@@ -1,24 +1,20 @@
 package compiler
 
-import scala.tools.nsc.util._
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.io._
 import java.io.{File => JFile}
 import scala.tools.nsc.interactive.{Global, Response}
 import scala.tools.nsc.Settings
+import scala.tools.nsc.util.{BatchSourceFile, SourceFile => NSCSourceFile}
+import PresentationCompiler._
 
 
-class ScalaPresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String])
+class ScalaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
     extends PresentationCompiler {
   
-  import PresentationCompiler._
   import ScalaPresentationCompiler._
   
   val reporter = new PresentationReporter()
-  
-  // Keeps track of the files that are currently loaded into the compiler,
-  // and their last modified date
-  val sources = scala.collection.mutable.Map[JFile, Long]()
   
   val compiler = {
     val sep = JFile.pathSeparator
@@ -26,7 +22,7 @@ class ScalaPresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String])
     // TODO: Make classpath modifiable. If I modify it do I need to tell the
     // existing compiler or create a new one?
     val settings = new Settings()
-    settings.classpath.value = jars.mkString("", sep, "")
+    settings.classpath.value = jars.map(_.getAbsolutePath).mkString("", sep, "")
     
     // TODO: What does this do?
     /*
@@ -43,45 +39,25 @@ class ScalaPresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String])
   // Load the initial set of source files into the compiler
   loadSources(srcs)
   
-  
-  // Loads the given set of source files into the compiler
-  override def loadSources(srcFiles: Seq[JFile]) = {
-    import scala.collection.mutable.ListBuffer
-    val reload = new ListBuffer[JFile]
+  override def loadSources(srcFiles: Seq[SourceFile]) = {
+    val (updated, deleted) = updateSources(srcFiles)
     
-    // For each source file, if it's already in the map, check its last
-    // modified date to see if it needs to be reloaded. If it's not in the
-    // map, add it.
-    srcFiles.foreach(src => {
-      sources.get(src) match {
-        case Some(lastModified) if(src.lastModified > lastModified) => reload += src
-        case None => {
-          reload += src
-          sources.put(src, src.lastModified)
-        }
-        case _ =>
-      }
-    })
-    
-    
-    // For each file in the map, if it's not in the list of source files,
-    // remove it from the map and compiler
-    sources.keySet.filter(!srcFiles.contains(_)).foreach(src => {
-      sources.remove(src)
+    // Remove the source files that have been deleted
+    deleted.map(src => {
       // TODO: Should I instead call askFilesDeleted?
       compiler.removeUnitOf(toSourceFile(src))
     })
     
-    
-    val srcList = reload.map(toSourceFile(_)).toList
-    println(srcList)
+    // Reload the source files that need to be updated
+    val srcList = updated.map(toSourceFile(_)).toList
+    //println(srcList)
     val reloadResult = new Response[Unit]
     compiler.askReload(srcList, reloadResult)
     reloadResult.get
   }
   
   
-  override def compile(src: JFile): Seq[Problem] = {
+  override def compile(src: SourceFile): Seq[Problem] = {
     val file = toSourceFile(src)
     val typedResult = new Response[compiler.Tree]
     reporter.reset
@@ -91,7 +67,7 @@ class ScalaPresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String])
     reporter.problems
   }
   
-  override def complete(src: JFile, line: Int, column: Int): Seq[CompleteOption] = {
+  override def complete(src: SourceFile, line: Int, column: Int): Seq[CompleteOption] = {
     val sourceFile = toSourceFile(src)
     val completeResult = new Response[List[compiler.Member]]
     val typedResult = new Response[compiler.Tree]
@@ -158,14 +134,15 @@ class ScalaPresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String])
     var compiler: Global = null
     var problems = ListBuffer[Problem]()
     
-    override def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = {
+    override def info0(pos: scala.tools.nsc.util.Position, msg: String, severity: Severity, force: Boolean): Unit = {
       severity.count += 1
       
       try {
         if(pos.isDefined) {
           //val source = pos.source
           //val length = source.identifier(pos, compiler).map(_.length).getOrElse(0)
-          problems += Problem(pos, formatMessage(msg), severity.id)
+          val position = PresentationCompiler.Position(pos.source.path, pos.line, pos.column)
+          problems += Problem(position, formatMessage(msg), severity.id)
         }
       } catch {
         case ex : UnsupportedOperationException => 
@@ -190,6 +167,7 @@ class ScalaPresentationCompiler(val srcs: Seq[JFile], val jars: Seq[String])
 }
 
 object ScalaPresentationCompiler {
-  def toSourceFile(file: JFile): SourceFile = new BatchSourceFile(new PlainFile(file))
-  def toSourceFile(name: String): SourceFile = toSourceFile(new JFile(name))
+  def toSourceFile(file: PresentationCompiler.SourceFile): NSCSourceFile = {
+    new BatchSourceFile(new PlainFile(file.src))
+  }
 }

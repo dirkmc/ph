@@ -12,8 +12,8 @@ object ProjectManager extends Controller {
   // TODO: Put this in session/cache
   var project:PlayProject = null
   
-  def openProject(root: String) = {
-    project = new PlayProject(root)
+  def openProject(root: String, projectType: String) = {
+    project = new PlayProject(root, projectType)
     html.project(new File(root))
   }
   
@@ -78,7 +78,8 @@ object ProjectManager extends Controller {
   }
   
   
-  def compile(filePath:String) = Json(compileJson(filePath))
+  def compile(filePath:String) = Json("{\"compile\":" + compileJson(filePath) + "}")
+  
   def compileJson(filePath:String) = {
     def getType(severity: Int) = severity match {
       case 1 => "warning"
@@ -87,7 +88,7 @@ object ProjectManager extends Controller {
     }
     
     project.compile(filePath).map(prob => {
-      val src = project.getOriginalFile(prob.pos.source.path).getAbsolutePath
+      val src = project.getOriginalFile(prob.pos.source).getAbsolutePath
       "{" +
       "\"source\":\"" + src + "\"," +
       "\"row\":" + prob.pos.line + "," +
