@@ -9,7 +9,7 @@ var AutoCompleteWidget = require('gui/widgets/auto_complete').AutoCompleteWidget
 var ErrorReporterWidget = require('gui/widgets/error_reporter').ErrorReporterWidget;
 var FileType = require('gui/file_type').FileType;
 
-function SourceFile(filePath, editorPane, editorTab, initialContent) {
+function SourceFile(project, filePath, editorPane, editorTab, initialContent) {
     var _self = this;
     this.editorPane = editorPane;
     this.editorTab = editorTab;
@@ -24,6 +24,7 @@ function SourceFile(filePath, editorPane, editorTab, initialContent) {
     var doc = this.editor.getSession().getDocument();
     
     this.serverInterface = new ServerInterface({
+        project: project,
         filePath: filePath,
         newLine: doc.getNewLineCharacter(),
         compile: fileType != null && fileType.compile,
@@ -102,7 +103,8 @@ function LeftPane() {
     }
 }
 
-var Gui = function() {
+var Gui = function(project) {
+    this.project = project;
     this.sourceFiles = {};
     this.sourceFileQueue = new SourceFileQueue();
     
@@ -112,7 +114,6 @@ var Gui = function() {
     this.leftPane.show("project");
     
     this.initCommands();
-    //this.loadSourceFile('/Users/dirk/dev/projects/yabe/app/controllers.scala');
 };
 
 (function(){
@@ -133,7 +134,7 @@ var Gui = function() {
             var _self = this;
             $.ajax({
                 url: '/file/load',
-                data: { filePath: filePath },
+                data: { project: _self.project, filePath: filePath },
                 success: function(content) {
                     _self.openSourceFile(filePath, content);
                 }
@@ -166,7 +167,7 @@ var Gui = function() {
             that.closeSourceFile($(this).parent().data('sourceFile'));
         });
         
-        var sourceFile = new SourceFile(filePath, editorPane, editorTab, content);
+        var sourceFile = new SourceFile(this.project, filePath, editorPane, editorTab, content);
         editorTab.data('sourceFile', sourceFile);
         this.sourceFiles[filePath] = sourceFile;
         this.showSourceFile(sourceFile);

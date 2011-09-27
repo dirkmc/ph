@@ -96,6 +96,7 @@ var ServerInterface = function(settings) {
             type: 'POST',
             dataType: 'json',
             data: {
+                project: this.settings.project,
                 filePath: this.settings.filePath,
                 deltas: serializeDeltas(this.settings.newLine, deltas),
                 compile: this.settings.compile,
@@ -149,6 +150,7 @@ var ServerInterface = function(settings) {
             type: 'GET',
             dataType: 'json',
             data: {
+                project: this.settings.project,
                 filePath: this.settings.filePath
             },
             success: function(response) {
@@ -176,6 +178,7 @@ var ServerInterface = function(settings) {
             url: '/file/save.json',
             type: 'POST',
             data: {
+                project: this.settings.project,
                 filePath: _self.settings.filePath,
                 checkSum: checkSum
             },
@@ -209,6 +212,7 @@ var ServerInterface = function(settings) {
             url: '/file/save/content.json',
             type: 'POST',
             data: {
+                project: this.settings.project,
                 filePath: this.settings.filePath,
                 content: value
             }

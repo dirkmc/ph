@@ -12,6 +12,8 @@ import play.exceptions.UnexpectedException;
 import PresentationCompiler._
 
 
+// TODO: Make this class thread safe
+// Can I use the incremental compiler or is this it?
 class JavaPresentationCompiler(val srcs: Seq[SourceFile], val jars: Seq[JFile])
     extends PresentationCompiler {
   

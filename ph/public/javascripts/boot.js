@@ -12,7 +12,7 @@ $(function() {
         },
         ['gui/gui'],
         function(gui) {
-            new gui.Gui();
+            new gui.Gui($('#project').val());
         }
     );
 });

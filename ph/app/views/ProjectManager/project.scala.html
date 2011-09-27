@@ -1,4 +1,5 @@
 @(
+    project: String,
     root:java.io.File
 )
 
@@ -9,7 +10,9 @@
 <head>
   <link href="/public/stylesheets/editor.less" rel="stylesheet" type="text/css" charset="utf-8"></link>
 </head>
-    
+
+<input type="hidden" id="project" value="@project" />
+
 <div id="left-pane">
   <div id="project-view" class="view">
     @fileList(root)
