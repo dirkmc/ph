@@ -3,10 +3,11 @@
 <head>
 </head>
 
-<a href='@action(controllers.ProjectManager.openProject("yabe", "/Users/dirk/dev/projects/yabe", "scala"))'>
+<a href='@action(controllers.ProjectManager.openProject("yabe", play.Play.applicationPath + "/samples/yabe", "scala"))'>
   YABE
 </a>
-<a href='@action(controllers.ProjectManager.openProject("yabe-java", "/Users/dirk/dev/projects/yabe-java", "java"))'>
+<br/>
+<a href='@action(controllers.ProjectManager.openProject("yabe-java", play.Play.applicationPath + "/samples/yabe-java", "java"))'>
   YABE Java
 </a>
 
